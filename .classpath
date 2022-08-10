@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/JavaFX"/>
+	<classpathentry kind="con" path="org.eclipse.fx.ide.jdt.core.JAVAFX_CONTAINER"/>
+	<classpathentry kind="lib" path="/Users/mohamed/Desktop/Mohamed/CS Personal Projects/YIFY-Desktop/lib/ControlsFX/controlsfx-11.1.1.jar" sourcepath="lib/ControlsFX/controlsfx-master/controlsfx/src/main/java">
+		<attributes>
+			<attribute name="javadoc_location" value="file:/Users/mohamed/Desktop/Mohamed/CS%20Personal%20Projects/YIFY-Desktop/lib/ControlsFX/controlsfx-master/controlsfx/src/main/docs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/mohamed/Desktop/Mohamed/CS Personal Projects/YIFY-Desktop/lib/ApacheCommonsIO/commons-io-2.11.0/commons-io-2.11.0.jar" sourcepath="lib/ApacheCommonsIO/commons-io-2.11.0/commons-io-2.11.0-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="file:/Users/mohamed/Desktop/Mohamed/CS%20Personal%20Projects/YIFY-Desktop/lib/ApacheCommonsIO/commons-io-2.11.0/docs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/mohamed/Desktop/Mohamed/CS Personal Projects/YIFY-Desktop/lib/Torrent-Parser/torrent-parser.jar" sourcepath="lib/Torrent-Parser/src"/>
+	<classpathentry kind="lib" path="/Users/mohamed/Desktop/Mohamed/CS Personal Projects/YIFY-Desktop/lib/json-20220320.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
