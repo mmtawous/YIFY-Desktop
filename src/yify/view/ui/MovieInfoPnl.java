@@ -15,6 +15,7 @@ import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.Transition;
 import javafx.collections.ObservableList;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
@@ -39,12 +40,18 @@ import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
+import javafx.scene.web.WebView;
 import javafx.stage.Screen;
 import javafx.util.Duration;
 import yify.model.movie.Movie;
@@ -73,9 +80,13 @@ public class MovieInfoPnl extends GridPane {
 	private Image backgroundImg;
 	private String plotSummary;
 	private Torrent[] torrents;
+	private String[] screenshotLinks;
+	private String ytTrailerCode;
 	private Map<Button, String> buttonsAndLinks;
 	private HBox titlePnl;
 	private GridPane topContent;
+	private VBox bottomContent;
+	private WebView webview = new WebView();
 
 	public MovieInfoPnl(Movie movie) {
 		try {
@@ -92,75 +103,8 @@ public class MovieInfoPnl extends GridPane {
 		column.setPercentWidth(100);
 		this.getColumnConstraints().add(column);
 
-		/********************* Initialize titlePnl START ********************/
-		titlePnl = new HBox(950);
-		titlePnl.setAlignment(Pos.CENTER_LEFT);
-		titlePnl.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
-//		titlePnl.setPrefSize(1200, 60);
-		titlePnl.setPadding(new Insets(10, 65, 10, 65));
-
-		Image ytsLogo = new Image("File:assets/logo-YTS.png");
-		ImageView imageView = new ImageView(ytsLogo);
-		titlePnl.getChildren().add(imageView);
-
-		ImageView taskViewerIcon = new ImageView(new Image("File:assets/taskManIcon.png"));
-
-		Button taskViewerBtn = new Button("", taskViewerIcon);
-		// hard coded insets for image size of icon
-		taskViewerBtn.setBackground(
-				new Background(new BackgroundFill(Color.TRANSPARENT, CornerRadii.EMPTY, new Insets(9, 14, 9, 14))));
-		taskViewerBtn.setFocusTraversable(false);
-		taskViewerBtn.setTooltip(new Tooltip("View running tasks"));
-
-		taskViewerBtn.setOnMouseEntered(moueseEvent -> {
-			final Animation animation = new Transition() {
-
-				{
-					setCycleDuration(Duration.millis(180));
-					setInterpolator(Interpolator.EASE_IN);
-				}
-
-				@Override
-				protected void interpolate(double frac) {
-					taskViewerBtn.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * frac)));
-
-				}
-
-			};
-			animation.play();
-
-		});
-
-		taskViewerBtn.setOnMouseExited(moueseEvent -> {
-			final Animation animation = new Transition() {
-
-				{
-					setCycleDuration(Duration.millis(180));
-					setInterpolator(Interpolator.EASE_IN);
-				}
-
-				@Override
-				protected void interpolate(double frac) {
-					taskViewerBtn.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * (1 - frac))));
-
-				}
-
-			};
-			animation.play();
-
-		});
-
-		taskViewerBtn.setOnMouseClicked(mouseEvent -> {
-			TaskViewer.show();
-		});
-		
-		titlePnl.getChildren().add(taskViewerBtn);
-
-		titlePnl.setBorder(new Border(new BorderStroke(null, null, Color.rgb(47, 47, 47, 1f), null, null, null,
-				BorderStrokeStyle.SOLID, null, CornerRadii.EMPTY, new BorderWidths(1), Insets.EMPTY)));
-		this.add(titlePnl, 0, 0);
-		/********************** Initialize titlePnl END *********************/
-
+		/********************* Initialize titlePnl ********************/
+		initTitlePnl();
 		/********************** Add background and overlay ******************/
 		// Creating a GridPane to act as the overlay AND a container for the elements on
 		// top of the background.
@@ -190,9 +134,78 @@ public class MovieInfoPnl extends GridPane {
 		/********************** Add cover image *****************************/
 		intiMovieDetails(movie);
 		/********************** Add bottom content pane *********************/
-		GridPane bottomContent = new GridPane();
-		bottomContent.setMinHeight(100);
+		bottomContent = new VBox();
+		// bottomContent.setMinHeight(100);
+		GridPane.setHalignment(bottomContent, HPos.CENTER);
+
+		initScreenshots();
+
 		this.add(bottomContent, 0, 2);
+
+	}
+
+	private void initTitlePnl() {
+		titlePnl = new HBox(950);
+		titlePnl.setAlignment(Pos.CENTER_LEFT);
+		titlePnl.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
+		titlePnl.setPadding(new Insets(10, 65, 10, 65));
+
+		Image ytsLogo = new Image("File:assets/logo-YTS.png");
+		ImageView imageView = new ImageView(ytsLogo);
+		titlePnl.getChildren().add(imageView);
+
+		ImageView taskViewerIcon = new ImageView(new Image("File:assets/taskManIcon.png"));
+
+		Button taskViewerBtn = new Button("", taskViewerIcon);
+		// hard coded insets for image size of icon
+		taskViewerBtn.setBackground(
+				new Background(new BackgroundFill(Color.TRANSPARENT, CornerRadii.EMPTY, new Insets(9, 14, 9, 14))));
+		taskViewerBtn.setFocusTraversable(false);
+		taskViewerBtn.setTooltip(new Tooltip("View running tasks"));
+
+		taskViewerBtn.setOnMouseEntered(moueseEvent -> {
+			final Animation animation = new Transition() {
+
+				{
+					setCycleDuration(Duration.millis(180));
+					setInterpolator(Interpolator.EASE_IN);
+				}
+
+				@Override
+				protected void interpolate(double frac) {
+					taskViewerBtn.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * frac)));
+				}
+			};
+			animation.play();
+
+		});
+
+		taskViewerBtn.setOnMouseExited(moueseEvent -> {
+			final Animation animation = new Transition() {
+
+				{
+					setCycleDuration(Duration.millis(180));
+					setInterpolator(Interpolator.EASE_IN);
+				}
+
+				@Override
+				protected void interpolate(double frac) {
+					taskViewerBtn.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * (1 - frac))));
+				}
+			};
+			animation.play();
+
+		});
+
+		taskViewerBtn.setOnMouseClicked(mouseEvent -> {
+			TaskViewer.show();
+		});
+
+		titlePnl.getChildren().add(taskViewerBtn);
+
+		titlePnl.setBorder(new Border(new BorderStroke(null, null, Color.rgb(47, 47, 47, 1f), null, null, null,
+				BorderStrokeStyle.SOLID, null, CornerRadii.EMPTY, new BorderWidths(1), Insets.EMPTY)));
+		this.add(titlePnl, 0, 0);
 
 	}
 
@@ -217,6 +230,12 @@ public class MovieInfoPnl extends GridPane {
 
 		}
 
+		screenshotLinks = new String[3];
+		for (int i = 0; i < 3; i++) {
+			screenshotLinks[i] = rawPage.getString("medium_screenshot_image" + (i + 1));
+		}
+
+		ytTrailerCode = rawPage.getString("yt_trailer_code");
 	}
 
 	private void getMovieDetails(Movie movie) throws IOException, InterruptedException {
@@ -271,6 +290,7 @@ public class MovieInfoPnl extends GridPane {
 		GridPane.setValignment(backBtnBox, VPos.TOP);
 
 		backBtnBox.setOnMouseClicked(mouseEvent -> {
+			webview.getEngine().load(null);
 			Main.switchSceneContent(Main.getBrowserPnl());
 		});
 
@@ -564,6 +584,82 @@ public class MovieInfoPnl extends GridPane {
 		DownloadDialog.show("Begin Download", torrentName, fileList, url);
 		System.out.println("End show dialog");
 
+	}
+
+	private void initScreenshots() {
+		HBox screenshots = new HBox(5);
+		screenshots.setPadding(new Insets(0, 0, 50, 0));
+		screenshots.setAlignment(Pos.TOP_CENTER);
+
+		System.out.println(ytTrailerCode);
+
+		ImageView playVidIcon = null;
+		if (!"".equals(ytTrailerCode)) {
+			playVidIcon = new ImageView(new Image("file:assets/playBtnIcon.png", true));
+		}
+
+		for (int i = 0; i < screenshotLinks.length; i++) {
+			if (screenshotLinks[i] != null) {
+				StackPane screenshotPane = new StackPane();
+				ImageView screenshotImg = new ImageView(new Image(screenshotLinks[i], true));
+				screenshotImg.setFitWidth(350);
+				screenshotImg.setFitHeight(197);
+				screenshotPane.getChildren().add(screenshotImg);
+
+				if (i == 0 && playVidIcon != null) {
+					screenshotPane.getChildren().add(playVidIcon);
+				}
+
+				Rectangle overlay = new Rectangle(350, 197);
+				overlay.setFill(Color.rgb(29, 29, 29, 0.0f));
+				screenshotPane.getChildren().add(overlay);
+
+				screenshotPane.setOnMouseEntered(mouseEvent -> {
+					final Animation animation = new Transition() {
+
+						{
+							setCycleDuration(Duration.millis(180));
+							setInterpolator(Interpolator.EASE_IN);
+						}
+
+						@Override
+						protected void interpolate(double frac) {
+							overlay.setFill(Color.rgb(29, 29, 29, 0.60f * frac));
+						}
+					};
+					animation.play();
+				});
+
+				screenshotPane.setOnMouseExited(mouseEvent -> {
+					final Animation animation = new Transition() {
+
+						{
+							setCycleDuration(Duration.millis(180));
+							setInterpolator(Interpolator.EASE_IN);
+						}
+
+						@Override
+						protected void interpolate(double frac) {
+							overlay.setFill(Color.rgb(29, 29, 29, 0.60f * (1 - frac)));
+						}
+					};
+					animation.play();
+				});
+
+				if (i == 0 && playVidIcon != null) {
+					overlay.setOnMouseClicked(mouseEvent -> {
+						screenshotPane.getChildren().clear();
+						webview.getEngine().load("https://youtube.com/embed/" + ytTrailerCode + "?autoplay=1");
+						webview.setPrefSize(350, 197);
+						screenshotPane.getChildren().add(webview);
+					});
+				}
+
+				screenshots.getChildren().add(screenshotPane);
+			}
+		}
+
+		bottomContent.getChildren().add(screenshots);
 	}
 
 }

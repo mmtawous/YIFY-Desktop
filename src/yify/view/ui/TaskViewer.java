@@ -13,12 +13,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.controlsfx.control.TaskProgressView;
 import org.json.JSONObject;
-
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import yify.model.moviecatalog.MovieCatalog;
 import yify.model.torrentclient.SizeConvertCellFactory;
 import yify.model.torrentclient.TorrentClient;
@@ -37,6 +36,7 @@ public class TaskViewer {
 			progressView.setRetainTasks(true);
 
 			Scene scene = new Scene(progressView);
+			scene.setFill(Color.rgb(41, 41, 41));
 			scene.getStylesheets().add("file:CSS/style.css");
 			stage.setScene(scene);
 			stage.show();
