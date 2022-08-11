@@ -9,16 +9,18 @@ public class Movie {
 	private int year;
 	private float rating;
 	private String[] genres;
+	private String lang;
 	
 	
 
-	public Movie(int id, Image thumbnail, String title, int year, float rating, String[] genres) {
+	public Movie(int id, Image thumbnail, String title, int year, float rating, String[] genres, String lang) {
 		this.id = id;
 		this.thumbnail = thumbnail;
 		this.title = title;
 		this.rating = rating;
 		this.genres = genres;
 		this.year = year;
+		this.lang = lang;
 	}
 	
 	public int getId() {
@@ -44,6 +46,10 @@ public class Movie {
 
 	public int getYear() {
 		return year;
+	}
+
+	public String getLang() {
+		return lang;
 	}	
 	
 }

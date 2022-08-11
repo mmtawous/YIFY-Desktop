@@ -1,5 +1,6 @@
 package yify.view.ui;
 
+import java.awt.Toolkit;
 import java.io.IOException;
 import java.util.ArrayList;
 import javafx.animation.Animation;
@@ -28,6 +29,7 @@ import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -58,6 +60,7 @@ public class BrowserPnl extends VBox {
 	private static HBox navBtnsBox;
 	private static final Font ARIAL_REG16 = new Font("Arial Regular", 16);
 	private static final Font ARIMO_BOLD14 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 14);
+	private static final Font ARIMO_BOLD12 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 12);
 	private static final Font ARIMO_BOLD22 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 22);
 	private static final Font ARIMO_REG22 = Font.loadFont("File:assets/fonts/arimo/Arimo-Regular.ttf", 22);
 	private static final Font ARIMO_REG12 = Font.loadFont("File:assets/fonts/arimo/Arimo-Regular.ttf", 12);
@@ -156,7 +159,7 @@ public class BrowserPnl extends VBox {
 
 		/*********************** Initialize moviePnl START ******************/
 		moviePnl = new VBox(10);
-		//moviePnl.setPrefWidth(1200);
+		// moviePnl.setPrefWidth(1200);
 		moviePnl.setAlignment(Pos.TOP_CENTER);
 
 		moviePnlTitle = new Label("YIFY Movies");
@@ -881,17 +884,26 @@ public class BrowserPnl extends VBox {
 					animation.play();
 
 				});
+				HBox movieTitleContainer = new HBox(5);
+				movieTitleContainer.setMaxWidth(thumbnailView.getFitWidth());
+
+				if (!"en".equals(currentMovie.getLang())) {
+					Text movieLangText = new Text("[" + currentMovie.getLang().toUpperCase() + "]");
+					movieLangText.setFont(ARIMO_BOLD12);
+					movieLangText.setFill(Color.rgb(172, 215, 222));
+					movieTitleContainer.getChildren().add(movieLangText);
+				}
 
 				Label movieTitle = new Label(currentMovie.getTitle());
 				movieTitle.setFont(ARIMO_BOLD14);
 				movieTitle.setTextFill(Color.WHITE);
-				movieTitle.setMaxWidth(thumbnailView.getFitWidth());
+				movieTitleContainer.getChildren().add(movieTitle);
 
 				Label movieYear = new Label(Integer.toString(currentMovie.getYear()));
 				movieYear.setFont(ARIMO_REG12);
 				movieYear.setTextFill(Color.rgb(145, 145, 145));
 
-				movieBox.getChildren().addAll(imageContainer, movieTitle, movieYear);
+				movieBox.getChildren().addAll(imageContainer, movieTitleContainer, movieYear);
 
 				movieBox.setOnMouseClicked(mouseEvent -> {
 					Main.switchSceneContent(new MovieInfoPnl(currentMovie));

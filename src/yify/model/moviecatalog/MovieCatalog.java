@@ -252,6 +252,7 @@ public class MovieCatalog {
 			String title = currentMov.getString("title_english");
 			int year = currentMov.getInt("year");
 			float rating = currentMov.getFloat("rating");
+			String lang = currentMov.getString("language");
 
 			String[] genres = null;
 			try {
@@ -260,7 +261,7 @@ public class MovieCatalog {
 				// Leave it null
 			}
 
-			currentPage.add(new Movie(id, thumbnail, title, year, rating, genres));
+			currentPage.add(new Movie(id, thumbnail, title, year, rating, genres, lang));
 		}
 
 		System.out.println("Done!");

@@ -1,9 +1,6 @@
 package yify.view.ui;
 
 import java.awt.Taskbar;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import javax.swing.ImageIcon;
 import javafx.application.Application;
 import javafx.application.Platform;
