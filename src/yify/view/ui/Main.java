@@ -32,7 +32,7 @@ public class Main extends Application {
 		root = new ScrollPane();
 		root.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
 		root.setFitToWidth(true);
-		//root.setFitToHeight(true);
+		root.setFitToHeight(true);
 		root.setContent(browserPnl);
 
 		Scene scene = new Scene(root);

@@ -43,15 +43,22 @@ import yify.model.torrentclient.TorrentClient;
 public class DownloadDialog {
 	private static Stage stage;
 	private static boolean isOpen;
+	private static final String STREAM_TITLE = "Begin Stream";
+	private static final String DOWNLOAD_TITLE = "Download Stream";
 
-	public static void show(String title, String torrentName, ObservableList<MovieFile> fileList, String torrentId) {
+	public static void show(StreamType streamType, String torrentName,
+			ObservableList<MovieFile> fileList, String torrentId) {
 		if (isOpen) {
 			stage.toFront();
 			return;
 		}
 
 		stage = new Stage();
-		stage.setTitle(title);
+		if (streamType != StreamType.NONE)
+			stage.setTitle(STREAM_TITLE);
+		else
+			stage.setTitle(DOWNLOAD_TITLE);
+
 		stage.initStyle(StageStyle.UTILITY);
 		isOpen = true;
 
@@ -204,7 +211,13 @@ public class DownloadDialog {
 			handleCancel();
 		});
 
-		Button downloadBtn = new Button("Download");
+		Button downloadBtn;
+		if (streamType != StreamType.NONE) {
+			downloadBtn = new Button("Stream");
+		} else {
+			downloadBtn = new Button("Download");
+		}
+
 		downloadBtn.setFont(new Font("Arial", 14));
 		downloadBtn.setTextFill(Color.WHITE);
 		downloadBtn.setPadding(new Insets(5, 20, 5, 20));
@@ -233,7 +246,7 @@ public class DownloadDialog {
 				downloadPath = outFileTxtField.getText();
 			}
 
-			handleDownload(torrentName, downloadPath, selectFileIndex, torrentId, fileList);
+			handleDownload(streamType, torrentName, downloadPath, selectFileIndex, torrentId, fileList);
 			// Closing the dialog upon downloading
 			handleCancel();
 		});
@@ -282,14 +295,23 @@ public class DownloadDialog {
 
 	}
 
-	private static void handleDownload(String torrentName, String downloadPath, Integer selectFileIndex,
-			String torrentId, ObservableList<MovieFile> fileList) {
+	private static void handleDownload(StreamType streamType, String torrentName,
+			String downloadPath, Integer selectFileIndex, String torrentId, ObservableList<MovieFile> fileList) {
 
-		try {
-			TorrentClient.start(StreamType.NONE, torrentName, downloadPath, selectFileIndex, torrentId, fileList);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if (streamType != StreamType.NONE) {
+			try {
+				TorrentClient.start(streamType, torrentName, downloadPath, selectFileIndex, torrentId, fileList);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} else {
+			try {
+				TorrentClient.start(StreamType.NONE, torrentName, downloadPath, selectFileIndex, torrentId, fileList);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 	}

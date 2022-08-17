@@ -10,12 +10,17 @@ import java.lang.ProcessBuilder.Redirect;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.apache.commons.io.FileUtils;
+
 import be.christophedetroyer.bencoding.Reader;
 import be.christophedetroyer.torrent.Torrent;
 import be.christophedetroyer.torrent.TorrentFile;
@@ -48,7 +53,14 @@ public class TorrentClient {
 		if (downloadPath != null) {
 			commandStr += "--out " + downloadPath + " ";
 		} else {
-			throw new IllegalArgumentException("Can not have a null download path");
+			File tempFolder = Path.of(System.getProperty("java.io.tmpdir"), "YIFY-Desktop").toFile();
+
+			// Won't work if file doesn't exist. Should work on the second run though.
+			FileUtils.forceDeleteOnExit(tempFolder);
+
+			String tempPath = tempFolder.getAbsolutePath();
+			commandStr += "--out " + tempPath + " ";
+
 		}
 
 		if (selectFileIndex != null) {
@@ -91,7 +103,8 @@ public class TorrentClient {
 		// to write the infoServerUrl to the designated file to be read IN THE
 		// BACKGROUND while the TaskViewer initializes in the Application thread. If the
 		// TaskViewer initializes before the infoServerUrl becomes available it will
-		// wait until it is. As soon as the infoServerUrl String is ready it is submitted
+		// wait until it is. As soon as the infoServerUrl String is ready it is
+		// submitted
 		// to the TaskViewer using the submitInfoServerUrl() static method.
 		System.out.println("Started thread");
 		ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -120,7 +133,8 @@ public class TorrentClient {
 		}
 
 		System.out.println("Started adding task and opening GUI");
-		TaskViewer.addTask(torrentName, null, p, downloadSize, fileName);
+		if (streamType == StreamType.NONE)
+			TaskViewer.addTask(torrentName, null, p, downloadSize, fileName);
 		System.out.println("End adding task and opening GUI");
 
 		return p;

@@ -119,40 +119,12 @@ public class TaskViewer {
 				}
 
 				updateMessage(constructMessage());
-				System.out.println(downloaded + " / " + downloadSize);
 				updateProgress(downloaded, downloadSize);
 			}
 			if (!isCancelled() && downloaded >= downloadSize && downloaded > 0) {
 				this.succeeded();
 			}
-
-//			timerTask = new TimerTask() {
-//
-//				@Override
-//				public void run() {
-//					// Checking if the stage is showing, if it is continue, otherwise sleep for a
-//					// second and return to save resources.
-//					if (!stage.isShowing()) {
-//						try {
-//							Thread.sleep(1000);
-//						} catch (InterruptedException e) {
-//							e.printStackTrace();
-//							return;
-//						}
-//						return;
-//					}
-//
-//					getProgressDetails();
-//					updateMessage(constructMessage());
-//					updateProgress(downloaded, downloadSize);
-//					if (downloaded >= downloadSize) {
-//						this.cancel();
-//						timer.cancel();
-//					}
-//				}
-//			};
-//
-//			timer.scheduleAtFixedRate(timerTask, 1000, 500);
+			
 			return null;
 		}
 
@@ -172,7 +144,6 @@ public class TaskViewer {
 				request = HttpRequest.newBuilder(new URI(infoServerUrl)).timeout(Duration.ofSeconds(10)).build();
 				// Use the client to send the request
 				response = client.send(request, BodyHandlers.ofString());
-				System.out.println("Called server!");
 			} catch (ConnectException e) {
 				if (downloaded >= downloadSize || downloaded == 0) {
 					downloaded = downloadSize;

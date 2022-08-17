@@ -1,0 +1,49 @@
+.combo-box .list-cell {
+    -fx-text-fill: rgba(70.0,70.0,70.0,1.0);
+}
+
+.combo-box-base {
+    -fx-font-size: 14.0px;
+    -fx-font-family: Arimo;
+}
+
+.combo-box-popup .list-view .list-cell {     
+    -fx-text-fill: rgba(70.0,70.0,70.0,1.0);
+    -fx-font-size: 14.0px;
+    -fx-font-family: Arimo;
+}
+
+.combo-box-popup .list-view .list-cell:filled:hover{
+    -fx-background-color: rgba(100.0,100.0,100.0,1.0);
+    -fx-text-fill: white;
+    -fx-font-size: 14.0px;
+    -fx-font-family: Arimo;
+}
+.combo-box .list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(70.0,70.0,70.0,1.0);
+    -fx-border-radius: 0.0 0.0 5.0 5.0;
+    -fx-background-radius: 0.0 0.0 5.0 5.0;
+    
+}
+
+.combo-box .arrow {
+    -fx-background-color: rgba(70.0,70.0,70.0,1.0);
+}
+
+.combo-box:hover .arrow {
+    -fx-background-color: rgba(100.0,100.0,100.0,1.0);
+}
+
+.radio-button .radio {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(70.0,70.0,70.0,1.0);
+    -fx-border-width: 2.0;
+    -fx-border-radius: 5.0px;
+    -fx-padding: 1.0px;
+}
+
+.radio-button .dot {
+    -fx-background-radius: 3.0px;
+    
+}

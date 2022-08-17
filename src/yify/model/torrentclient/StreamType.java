@@ -1,5 +1,5 @@
 package yify.model.torrentclient;
 
 public enum StreamType {
-	VLC, BROWSER, NONE
+	NONE, VLC, IINA, MPLAYER, MPV, SMPLAYER
 }

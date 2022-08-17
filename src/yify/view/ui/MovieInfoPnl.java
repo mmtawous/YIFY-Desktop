@@ -8,18 +8,24 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.Transition;
+import javafx.beans.binding.DoubleBinding;
 import javafx.collections.ObservableList;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.effect.ColorAdjust;
@@ -42,13 +48,11 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-import javafx.scene.media.MediaView;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.web.WebView;
@@ -58,6 +62,7 @@ import yify.model.movie.Movie;
 import yify.model.movie.Torrent;
 import yify.model.moviecatalog.MovieCatalog;
 import yify.model.torrentclient.MovieFile;
+import yify.model.torrentclient.StreamType;
 import yify.model.torrentclient.TorrentClient;
 
 public class MovieInfoPnl extends GridPane {
@@ -68,12 +73,16 @@ public class MovieInfoPnl extends GridPane {
 	/** A constant for the id parameter as per the YTS.mx API */
 	public static final String ID_PARAM = "movie_id=";
 	/** A constant for the with_cast parameter as per the YTS.mx API */
-	public static final String WITH_CAST_PARAM = "with_images=";
+	public static final String WITH_CAST_PARAM = "with_cast=";
 	/** A constant for the with_images parameter as per the YTS.mx API */
-	public static final String WITH_IMAGES_PARAM = "with_cast=";
+	public static final String WITH_IMAGES_PARAM = "with_images=";
+	private static final String DEFAULT_THUMBNAIL = "https://img.yts.mx/assets/images/actors/thumb/default_avatar.jpg";
 	private static final Font ARIMO_BOLD40 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 40);
 	private static final Font ARIMO_BOLD20 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 20);
+	private static final Font ARIMO_BOLD18 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 18);
+	private static final Font ARIMO_BOLD14 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 14);
 	private static final Font ARIMO_ITALIC18 = Font.loadFont("File:assets/fonts/arimo/Arimo-Italic.ttf", 20);
+	private static final Font ARIMO_REG14 = Font.loadFont("File:assets/fonts/arimo/Arimo-Regular.ttf", 14);
 	private static final Font ARIMO_REG13 = Font.loadFont("File:assets/fonts/arimo/Arimo-Regular.ttf", 13);
 	private static final Font ARIMO_REG16 = Font.loadFont("File:assets/fonts/arimo/Arimo-Regular.ttf", 16);
 
@@ -82,15 +91,22 @@ public class MovieInfoPnl extends GridPane {
 	private Torrent[] torrents;
 	private String[] screenshotLinks;
 	private String ytTrailerCode;
+	/**
+	 * A map containing the actor name and character name sperated by a ':' as the
+	 * key, and a URL to their thumbnail as the value.
+	 */
+	private Map<String, String> cast;
 	private Map<Button, String> buttonsAndLinks;
 	private HBox titlePnl;
 	private GridPane topContent;
-	private VBox bottomContent;
+	private GridPane bottomContent;
 	private WebView webview = new WebView();
 
 	public MovieInfoPnl(Movie movie) {
 		try {
+			System.out.println("Start movieDetails");
 			getMovieDetails(movie);
+			System.out.println("End movieDetails");
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -131,14 +147,18 @@ public class MovieInfoPnl extends GridPane {
 		initBackBtn();
 		/********************** Add cover image *****************************/
 		initCoverImg(movie);
+		/********************** Add streamBtn *******************************/
+		initStreamBtn();
 		/********************** Add cover image *****************************/
-		intiMovieDetails(movie);
+		initMovieDetails(movie);
 		/********************** Add bottom content pane *********************/
-		bottomContent = new VBox();
-		// bottomContent.setMinHeight(100);
-		GridPane.setHalignment(bottomContent, HPos.CENTER);
-
+		bottomContent = new GridPane();
+		bottomContent.setAlignment(Pos.TOP_CENTER);
+		/********************** Add screenshots *****************************/
 		initScreenshots();
+		/********************** Add cast if present *************************/
+		if (!cast.isEmpty())
+			initCast();
 
 		this.add(bottomContent, 0, 2);
 
@@ -192,6 +212,7 @@ public class MovieInfoPnl extends GridPane {
 				protected void interpolate(double frac) {
 					taskViewerBtn.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * (1 - frac))));
 				}
+
 			};
 			animation.play();
 
@@ -209,39 +230,10 @@ public class MovieInfoPnl extends GridPane {
 
 	}
 
-	private void parseRawPage(JSONObject rawPage) {
-		backgroundImg = new Image(rawPage.getString("background_image"), false);
-		plotSummary = rawPage.getString("description_full");
-		JSONArray rawTors = rawPage.getJSONArray("torrents");
-
-		torrents = new Torrent[rawTors.length()];
-
-		for (int i = 0; i < rawTors.length(); i++) {
-			JSONObject rawTorrent = (JSONObject) rawTors.get(i);
-
-			String url = rawTorrent.getString("url");
-			String quality = rawTorrent.getString("quality");
-			String type = rawTorrent.getString("type");
-			int seeds = rawTorrent.getInt("seeds");
-			int peers = rawTorrent.getInt("peers");
-			String size = rawTorrent.getString("size");
-
-			torrents[i] = new Torrent(url, quality, type, seeds, peers, size);
-
-		}
-
-		screenshotLinks = new String[3];
-		for (int i = 0; i < 3; i++) {
-			screenshotLinks[i] = rawPage.getString("medium_screenshot_image" + (i + 1));
-		}
-
-		ytTrailerCode = rawPage.getString("yt_trailer_code");
-	}
-
 	private void getMovieDetails(Movie movie) throws IOException, InterruptedException {
 		HttpClient client = MovieCatalog.getClient();
 
-		String queryString = ID_PARAM + movie.getId() + "&" + WITH_CAST_PARAM + true;
+		String queryString = ID_PARAM + movie.getId() + "&" + WITH_IMAGES_PARAM + true + "&" + WITH_CAST_PARAM + true;
 
 		URI uri = null;
 		try {
@@ -279,7 +271,62 @@ public class MovieInfoPnl extends GridPane {
 		System.out.println(uri.toString());
 
 		JSONObject rawPage = (JSONObject) ((JSONObject) new JSONObject(jsonString).get("data")).get("movie");
+		System.out.println("Start parse");
 		parseRawPage(rawPage);
+		System.out.println("End parse");
+	}
+
+	private void parseRawPage(JSONObject rawPage) {
+		backgroundImg = new Image(rawPage.getString("background_image"), false);
+		plotSummary = rawPage.getString("description_full");
+		JSONArray rawTors = rawPage.getJSONArray("torrents");
+
+		torrents = new Torrent[rawTors.length()];
+
+		for (int i = 0; i < rawTors.length(); i++) {
+			JSONObject rawTorrent = (JSONObject) rawTors.get(i);
+
+			String url = rawTorrent.getString("url");
+			String quality = rawTorrent.getString("quality");
+			String type = rawTorrent.getString("type");
+			int seeds = rawTorrent.getInt("seeds");
+			int peers = rawTorrent.getInt("peers");
+			String size = rawTorrent.getString("size");
+
+			torrents[i] = new Torrent(url, quality, type, seeds, peers, size);
+
+		}
+
+		screenshotLinks = new String[3];
+		for (int i = 0; i < 3; i++) {
+			screenshotLinks[i] = rawPage.getString("medium_screenshot_image" + (i + 1));
+		}
+
+		ytTrailerCode = rawPage.getString("yt_trailer_code");
+
+		cast = new LinkedHashMap<String, String>();
+
+		JSONArray rawCast = null;
+		try {
+			rawCast = rawPage.getJSONArray("cast");
+		} catch (JSONException e) {
+			return;
+		}
+		for (int i = 0; i < rawCast.length(); i++) {
+			JSONObject currentCast = rawCast.getJSONObject(i);
+			String name = currentCast.getString("name");
+			String characterName = currentCast.getString("character_name");
+
+			String thumbnail;
+			try {
+				thumbnail = currentCast.getString("url_small_image");
+			} catch (JSONException e) {
+				thumbnail = DEFAULT_THUMBNAIL;
+			}
+
+			cast.put(name + ":" + characterName, thumbnail);
+		}
+
 	}
 
 	private void initBackBtn() {
@@ -352,6 +399,7 @@ public class MovieInfoPnl extends GridPane {
 					backBtn.setEffect(lighting);
 
 				}
+
 			};
 			animation.play();
 		});
@@ -379,7 +427,71 @@ public class MovieInfoPnl extends GridPane {
 
 	}
 
-	private void intiMovieDetails(Movie movie) {
+	private void initStreamBtn() {
+		Button streamBtn = new Button("Watch Now");
+		streamBtn.setBackground(
+				new Background(new BackgroundFill(Color.rgb(106, 192, 69, 1f), new CornerRadii(3), null)));
+		streamBtn.setPrefSize(263, 40);
+		streamBtn.setTextFill(Color.WHITE);
+		streamBtn.setFont(ARIMO_BOLD18);
+		GridPane.setMargin(streamBtn, new Insets(10, 0, 0, 40));
+		streamBtn.setOnMouseEntered(mouseEvent -> {
+			final Animation animation = new Transition() {
+
+				{
+					setCycleDuration(Duration.millis(300));
+					setInterpolator(Interpolator.EASE_BOTH);
+				}
+
+				@Override
+				protected void interpolate(double frac) {
+					double rVariable = (106 - 93) * frac;
+					int r = (int) Math.ceil(106 - rVariable);
+					double gVariable = (192 - 169) * frac;
+					int g = (int) Math.ceil(192 - gVariable);
+					double bVariable = (69 - 60) * frac;
+					int b = (int) Math.ceil(69 - bVariable);
+
+					Color vColor = Color.rgb(r, g, b);
+					streamBtn.setBackground(new Background(new BackgroundFill(vColor, new CornerRadii(3), null)));
+				}
+			};
+			animation.play();
+		});
+
+		streamBtn.setOnMouseExited(mouseEvent -> {
+			final Animation animation = new Transition() {
+
+				{
+					setCycleDuration(Duration.millis(300));
+					setInterpolator(Interpolator.EASE_BOTH);
+				}
+
+				@Override
+				protected void interpolate(double frac) {
+					double rVariable = (106 - 93) * frac;
+					int r = (int) Math.ceil(93 + rVariable);
+					double gVariable = (192 - 169) * frac;
+					int g = (int) Math.ceil(169 + gVariable);
+					double bVariable = (69 - 60) * frac;
+					int b = (int) Math.ceil(60 + bVariable);
+					Color vColor = Color.rgb(r, g, b);
+					streamBtn.setBackground(new Background(new BackgroundFill(vColor, new CornerRadii(3), null)));
+				}
+			};
+			animation.play();
+		});
+		
+		streamBtn.setOnMouseClicked(mouseEvent -> {
+			ChoosePlayerDialog.show(buttonsAndLinks);
+		});
+
+		// GridPane.setConstraints(streamBtn, 1, 1, 1, 2);
+		topContent.add(streamBtn, 1, 2);
+
+	}
+
+	private void initMovieDetails(Movie movie) {
 		VBox detailsContainer = new VBox(20);
 		detailsContainer.setMaxWidth(450);
 
@@ -429,7 +541,7 @@ public class MovieInfoPnl extends GridPane {
 		downloadBtnsBox.getChildren().add(availableIn);
 
 		// Initialize Map storing each button and its respective torrent link
-		buttonsAndLinks = new HashMap<Button, String>();
+		buttonsAndLinks = new LinkedHashMap<Button, String>();
 
 		for (int i = 0; i < torrents.length; i++) {
 			Torrent currTorrent = torrents[i];
@@ -528,6 +640,7 @@ public class MovieInfoPnl extends GridPane {
 
 		// Rating Icons and label
 		if (movie.getRating() != 0) {
+
 			HBox ratingBox = new HBox(15);
 			ImageView imdbIcon = new ImageView(new Image("file:assets/imdb-logo.png"));
 			ratingBox.getChildren().add(imdbIcon);
@@ -581,14 +694,15 @@ public class MovieInfoPnl extends GridPane {
 		String torrentName = fileList.get(0).getTorrentName();
 
 		System.out.println("Starting show dialog");
-		DownloadDialog.show("Begin Download", torrentName, fileList, url);
+		DownloadDialog.show(StreamType.NONE, torrentName, fileList, url);
 		System.out.println("End show dialog");
 
 	}
 
 	private void initScreenshots() {
 		HBox screenshots = new HBox(5);
-		screenshots.setPadding(new Insets(0, 0, 50, 0));
+		VBox.setMargin(screenshots, new Insets(0, 110, 0, 0));
+		screenshots.setPadding(new Insets(0, 0, 70, 0));
 		screenshots.setAlignment(Pos.TOP_CENTER);
 
 		System.out.println(ytTrailerCode);
@@ -599,7 +713,8 @@ public class MovieInfoPnl extends GridPane {
 		}
 
 		for (int i = 0; i < screenshotLinks.length; i++) {
-			if (screenshotLinks[i] != null) {
+			if (screenshotLinks[i] != null && !"".equals(screenshotLinks[i])) {
+				System.out.println(screenshotLinks[i]);
 				StackPane screenshotPane = new StackPane();
 				ImageView screenshotImg = new ImageView(new Image(screenshotLinks[i], true));
 				screenshotImg.setFitWidth(350);
@@ -642,6 +757,7 @@ public class MovieInfoPnl extends GridPane {
 						protected void interpolate(double frac) {
 							overlay.setFill(Color.rgb(29, 29, 29, 0.60f * (1 - frac)));
 						}
+
 					};
 					animation.play();
 				});
@@ -656,10 +772,72 @@ public class MovieInfoPnl extends GridPane {
 				}
 
 				screenshots.getChildren().add(screenshotPane);
+
 			}
 		}
 
-		bottomContent.getChildren().add(screenshots);
+		GridPane.setHalignment(screenshots, HPos.CENTER);
+		bottomContent.add(screenshots, 0, 0);
+	}
+
+	private void initCast() {
+		VBox castBox = new VBox(10);
+		castBox.setMaxWidth(400);
+		castBox.setPadding(new Insets(0, 0, 70, 0));
+		// castBox.setBackground(new Background(new BackgroundFill(Color.RED, null,
+		// null)));
+
+		Label topCast = new Label("Top Cast");
+		topCast.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.75f)));
+		topCast.setFont(ARIMO_BOLD20);
+		topCast.setTextFill(Color.WHITE);
+
+		castBox.getChildren().add(topCast);
+
+		for (Map.Entry<String, String> entry : cast.entrySet()) {
+			HBox actorBox = new HBox(10);
+			actorBox.setAlignment(Pos.CENTER_LEFT);
+			actorBox.setPadding(new Insets(0, 0, 10, 0));
+			// actorBox.setBackground(new Background(new BackgroundFill(Color.rgb(50, 50, 50
+			// * cnt), null, null)));
+			// actorBox.setMaxWidth(200);
+			actorBox.setBorder(new Border(new BorderStroke(Color.TRANSPARENT, Color.TRANSPARENT, Color.rgb(47, 47, 47),
+					Color.TRANSPARENT, BorderStrokeStyle.NONE, BorderStrokeStyle.NONE, BorderStrokeStyle.SOLID,
+					BorderStrokeStyle.NONE, CornerRadii.EMPTY, new BorderWidths(1), Insets.EMPTY)));
+
+			String[] actor = entry.getKey().split(":");
+			String url = entry.getValue();
+
+			ImageView thumbnail = new ImageView(new Image(url, true));
+			thumbnail.setFitWidth(40);
+			thumbnail.setFitHeight(40);
+			Circle clip = new Circle(20, 20, 20);
+
+			thumbnail.setClip(clip);
+
+			Label actorNameLbl = new Label(actor[0]);
+			actorNameLbl.setFont(ARIMO_BOLD14);
+			actorNameLbl.setTextFill(Color.rgb(145, 145, 145));
+
+			Label characterNameLbl = null;
+			if (actor.length > 1) {
+				characterNameLbl = new Label("as " + actor[1]);
+				characterNameLbl.setPadding(new Insets(0, 0, 0, -5));
+				characterNameLbl.setFont(ARIMO_REG14);
+				characterNameLbl.setTextFill(Color.WHITE);
+			}
+
+			actorBox.getChildren().addAll(thumbnail, actorNameLbl);
+
+			if (characterNameLbl != null)
+				actorBox.getChildren().add(characterNameLbl);
+
+			castBox.getChildren().add(actorBox);
+		}
+
+		GridPane.setHalignment(castBox, HPos.RIGHT);
+
+		bottomContent.add(castBox, 0, 1);
 	}
 
 }
