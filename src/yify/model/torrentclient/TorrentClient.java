@@ -10,7 +10,6 @@ import java.lang.ProcessBuilder.Redirect;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -18,9 +17,7 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.apache.commons.io.FileUtils;
-
 import be.christophedetroyer.bencoding.Reader;
 import be.christophedetroyer.torrent.Torrent;
 import be.christophedetroyer.torrent.TorrentFile;
@@ -46,6 +43,14 @@ public class TorrentClient {
 
 		if (streamType == StreamType.VLC) {
 			commandStr += torrentId + " --vlc ";
+		} else if (streamType == StreamType.IINA) {
+			commandStr += torrentId + " --iina ";
+		} else if (streamType == StreamType.MPLAYER) {
+			commandStr += torrentId + " --mplayer ";
+		} else if (streamType == StreamType.MPV) {
+			commandStr += torrentId + " --mpv ";
+		} else if (streamType == StreamType.SMPLAYER) {
+			commandStr += torrentId + " --smplayer ";
 		} else {
 			commandStr += "download " + torrentId + " ";
 		}
