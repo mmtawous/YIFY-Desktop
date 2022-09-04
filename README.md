@@ -33,6 +33,5 @@ The latest build is available for [download here](https://github.com/mmtawous/YI
 4. Support for Windows devices!
 
 ## License
-Licensed under GNU General Public License v3.0
-Copyright (c) Mohamed Tawous
+Licensed under GNU General Public License v3.0 | Copyright (c) Mohamed Tawous
 
