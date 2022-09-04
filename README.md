@@ -31,3 +31,8 @@ The latest build is available for [download here](https://github.com/mmtawous/YI
 2. Improved responsiveness in movie browser
 3. Searching by YTS.mx featured movies
 4. Support for Windows devices!
+
+## License
+Licensed under GNU General Public License v3.0
+Copyright (c) Mohamed Tawous
+
