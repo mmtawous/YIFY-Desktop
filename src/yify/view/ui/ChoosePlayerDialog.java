@@ -3,6 +3,7 @@ package yify.view.ui;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
@@ -10,13 +11,11 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.animation.Transition;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -48,7 +47,7 @@ import yify.model.torrentclient.StreamType;
 import yify.model.torrentclient.TorrentClient;
 import yify.view.ui.util.SingleSelectionModelImpl;
 
-public class ChoosePlayerDialog {
+final class ChoosePlayerDialog {
 	private static final String VLC_NAME = "VLC";
 	private static final String IINA_NAME = "IINA";
 	private static final String MPLAYER_NAME = "MPlayer";
@@ -62,12 +61,19 @@ public class ChoosePlayerDialog {
 	private static ComboBox<String> qualityCombo;
 	private static RadioButton keepRadBtn;
 	private static Button streamBtn;
-	private static SingleSelectionModelImpl selectionModel;
+	private static SingleSelectionModelImpl<ImageView> selectionModel;
+	private static Map<Button, String> buttonsAndLinks;
 
-	public static void show(Map<Button, String> buttonsAndLinks) {
+	protected static void show(Map<Button, String> buttonsAndLinks) {
+		Objects.requireNonNull(buttonsAndLinks);
+		
+		// Updating this field every time the dialog is show ensures the combo box and
+		// the stream button have the correct options and links
+		ChoosePlayerDialog.buttonsAndLinks = buttonsAndLinks;
+
 		if (stage != null) {
 			showStage();
-			updateQualityCombo(buttonsAndLinks);
+			updateQualityCombo();
 		} else {
 			stage = new Stage();
 			main = new GridPane();
@@ -78,7 +84,7 @@ public class ChoosePlayerDialog {
 			main.setOpacity(0);
 
 			initTopContent();
-			initBottomContent(buttonsAndLinks);
+			initBottomContent(ChoosePlayerDialog.buttonsAndLinks);
 
 			Scene scene = new Scene(main, 1000, 500);
 			scene.setFill(Color.TRANSPARENT);
@@ -133,11 +139,12 @@ public class ChoosePlayerDialog {
 
 		DropShadow dropShadow = new DropShadow(5, 5, 5, Color.rgb(0, 0, 0, 0.40f));
 
-		selectionModel = new SingleSelectionModelImpl(makeIcon("file:assets/iinaIcon.png", IINA_NAME, dropShadow, 0, 1),
-				makeIcon("file:assets/VLC_Icon.png", "VLC", dropShadow, 1, 1),
-				makeIcon("file:assets/mplayerIcon.png", MPLAYER_NAME, dropShadow, 2, 1),
-				makeIcon("file:assets/mpvIcon.png", MPV_NAME, dropShadow, 3, 1),
-				makeIcon("file:assets/smPlayerIcon.png", SMPLAYER_NAME, dropShadow, 4, 1));
+		selectionModel = new SingleSelectionModelImpl<ImageView>(
+				new ImageView[] { makeIcon("file:assets/iinaIcon.png", IINA_NAME, dropShadow, 0, 1),
+						makeIcon("file:assets/VLC_Icon.png", "VLC", dropShadow, 1, 1),
+						makeIcon("file:assets/mplayerIcon.png", MPLAYER_NAME, dropShadow, 2, 1),
+						makeIcon("file:assets/mpvIcon.png", MPV_NAME, dropShadow, 3, 1),
+						makeIcon("file:assets/smPlayerIcon.png", SMPLAYER_NAME, dropShadow, 4, 1) });
 
 		main.add(topContent, 0, 0);
 
@@ -164,7 +171,7 @@ public class ChoosePlayerDialog {
 			if (selectionModel.getSelected() != null)
 				selectionModel.getSelected().setEffect(ds);
 
-			selectionModel.select((Node) mouseEvent.getSource());
+			selectionModel.select((ImageView) mouseEvent.getSource());
 
 			final Animation animation = new Transition() {
 
@@ -209,7 +216,7 @@ public class ChoosePlayerDialog {
 
 			@Override
 			protected void interpolate(double frac) {
-				if (!selectionModel.isSelected((Node) mouseEvent.getSource())) {
+				if (!selectionModel.isSelected((ImageView) mouseEvent.getSource())) {
 					if (fadeIn) {
 						float var = (float) ((5 * frac) + 5);
 						((ImageView) mouseEvent.getSource())
@@ -244,7 +251,7 @@ public class ChoosePlayerDialog {
 				new CornerRadii(5), new BorderWidths(2))));
 		qualityCombo.setFocusTraversable(false);
 
-		updateQualityCombo(buttonsAndLinks);
+		updateQualityCombo();
 
 		keepRadBtn = new RadioButton();
 
@@ -300,7 +307,7 @@ public class ChoosePlayerDialog {
 					new Background(new BackgroundFill(Color.rgb(38, 110, 205), new CornerRadii(5), Insets.EMPTY)));
 		});
 		streamBtn.setOnAction(actionEvent -> {
-			handleStream(buttonsAndLinks);
+			handleStream();
 		});
 
 		// If no player is selected disable button
@@ -314,8 +321,8 @@ public class ChoosePlayerDialog {
 		main.add(bottomContent, 0, 1);
 	}
 
-	private static void updateQualityCombo(Map<Button, String> buttonsAndLinks) {
-		Iterator<Button> iter = buttonsAndLinks.keySet().iterator();
+	private static void updateQualityCombo() {
+		Iterator<Button> iter = ChoosePlayerDialog.buttonsAndLinks.keySet().iterator();
 
 		ObservableList<String> items = FXCollections.observableArrayList();
 		while (iter.hasNext()) {
@@ -326,13 +333,13 @@ public class ChoosePlayerDialog {
 		qualityCombo.getSelectionModel().select(0);
 	}
 
-	private static void handleStream(Map<Button, String> buttonsAndLinks) {
+	private static void handleStream() {
 		String url = "";
-		Iterator<Button> iter = buttonsAndLinks.keySet().iterator();
+		Iterator<Button> iter = ChoosePlayerDialog.buttonsAndLinks.keySet().iterator();
 		while (iter.hasNext()) {
 			Button curr = iter.next();
 			if (qualityCombo.getSelectionModel().getSelectedItem().equals(curr.getText())) {
-				url = buttonsAndLinks.get(curr);
+				url = ChoosePlayerDialog.buttonsAndLinks.get(curr);
 			}
 		}
 

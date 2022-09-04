@@ -40,6 +40,7 @@ public class ConnectionThread implements ConnectionValidator {
 			statusCode = http.getResponseCode();
 		} catch (Exception e) {
 			System.out.println(statusCode);
+			e.printStackTrace();
 			throw new ConnectException("Unable to connect to the YTS.MX!");
 		}
 		if (statusCode != 200)

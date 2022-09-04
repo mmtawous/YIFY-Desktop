@@ -14,7 +14,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import javafx.scene.image.Image;
 import yify.model.movie.Movie;
-import yify.model.moviecatalong.searchquery.SearchQuery;
+import yify.model.moviecatalog.searchquery.SearchQuery;
 import yify.view.ui.BrowserPnl;
 
 /**
@@ -199,6 +199,7 @@ public class MovieCatalog {
 		} catch (Exception e) {
 			// Any exceptions that occur here are most likely network exceptions so we
 			// assume that the connection is bad.
+			e.printStackTrace();
 			setConnectionOkay(false);
 			BrowserPnl.loadMovies(connectionOkay);
 			return;

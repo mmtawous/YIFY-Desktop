@@ -11,8 +11,13 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.io.file.Counters.Counter;
 import org.controlsfx.control.TaskProgressView;
 import org.json.JSONObject;
+
+import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
@@ -57,6 +62,26 @@ public class TaskViewer {
 		executorService.submit(taskToAdd);
 		progressView.getTasks().add(taskToAdd);
 
+	}
+
+	/**
+	 * This method must first find the correct task to add the infoServerUrl to
+	 * using the provided process parameter.
+	 * 
+	 * @param infoServerUrl the infoServerUrl to be submitted to the task executor
+	 *                      thread.
+	 * @param p             the process associated with the infoServerUrl
+	 */
+	public static void submitInfoServerUrl(String infoServerUrl, Process p) {
+		ObservableList<DownloadTask> tasks = progressView.getTasks();
+		for (int i = 0; i < tasks.size(); i++) {
+			// using == comparison because we are looking at the object itself not its
+			// contents.
+			if (tasks.get(i).getProcess() == p) {
+				tasks.get(i).infoServerUrl = infoServerUrl;
+				break; // breaking as soon as the correct process is found
+			}
+		}
 	}
 
 	private static class DownloadTask extends Task<Void> {
@@ -124,7 +149,7 @@ public class TaskViewer {
 			if (!isCancelled() && downloaded >= downloadSize && downloaded > 0) {
 				this.succeeded();
 			}
-			
+
 			return null;
 		}
 
@@ -137,8 +162,13 @@ public class TaskViewer {
 
 			HttpRequest request = null;
 			try {
+				// Timeout after 20 seconds of waiting for info server
+				long startTime = System.currentTimeMillis();
 				while (infoServerUrl == null) {
-					Thread.onSpinWait();
+					if (System.currentTimeMillis() > startTime + 20000)
+						this.failed();
+					else
+						Thread.onSpinWait();
 				}
 				// Create a request
 				request = HttpRequest.newBuilder(new URI(infoServerUrl)).timeout(Duration.ofSeconds(10)).build();
@@ -186,26 +216,6 @@ public class TaskViewer {
 
 		}
 
-	}
-
-	/**
-	 * This method must first find the correct task to add the infoServerUrl to
-	 * using the provided process parameter.
-	 * 
-	 * @param infoServerUrl the infoServerUrl to be submitted to the task executor
-	 *                      thread.
-	 * @param p             the process associated with the infoServerUrl
-	 */
-	public static void submitInfoServerUrl(String infoServerUrl, Process p) {
-		ObservableList<DownloadTask> tasks = progressView.getTasks();
-		for (int i = 0; i < tasks.size(); i++) {
-			// using == comparison because we are looking at the object itself not its
-			// contents.
-			if (tasks.get(i).getProcess() == p) {
-				tasks.get(i).infoServerUrl = infoServerUrl;
-				break; // breaking as soon as the correct process is found
-			}
-		}
 	}
 
 }

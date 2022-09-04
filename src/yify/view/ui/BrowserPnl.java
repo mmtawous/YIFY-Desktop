@@ -1,15 +1,18 @@
 package yify.view.ui;
 
-import java.awt.Toolkit;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
+
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.Transition;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -29,7 +32,6 @@ import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -40,10 +42,10 @@ import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
 import yify.model.movie.Movie;
 import yify.model.moviecatalog.MovieCatalog;
-import yify.model.moviecatalong.searchquery.Genre;
-import yify.model.moviecatalong.searchquery.Quality;
-import yify.model.moviecatalong.searchquery.SearchQuery;
-import yify.model.moviecatalong.searchquery.SortBy;
+import yify.model.moviecatalog.searchquery.Genre;
+import yify.model.moviecatalog.searchquery.Quality;
+import yify.model.moviecatalog.searchquery.SearchQuery;
+import yify.model.moviecatalog.searchquery.SortBy;
 
 public class BrowserPnl extends VBox {
 	private static MovieCatalog instance;
@@ -730,12 +732,14 @@ public class BrowserPnl extends VBox {
 			});
 
 			reloadBtn.setOnAction(buttonEvent -> {
-				try {
-					instance.makeRequest(SearchQuery.getDefaultSearchQuery());
-				} catch (IOException | InterruptedException e) {
-					e.printStackTrace();
+				if (instance.getConnectionStatus()) {
+					try {
+						instance.makeRequest(SearchQuery.getDefaultSearchQuery());
+					} catch (IOException | InterruptedException e) {
+						e.printStackTrace();
+					}
+					initNavBtns();
 				}
-				initNavBtns();
 			});
 
 			noConnectionBox.getChildren().addAll(noConnectionLbl, noConnectionIcon, reloadBtn);
@@ -906,7 +910,29 @@ public class BrowserPnl extends VBox {
 				movieBox.getChildren().addAll(imageContainer, movieTitleContainer, movieYear);
 
 				movieBox.setOnMouseClicked(mouseEvent -> {
-					Main.switchSceneContent(new MovieInfoPnl(currentMovie));
+					if (instance.getConnectionStatus()) {
+
+						// Initializing the MovieInfoPnl in a background thread to prevent GUI from
+						// hanging on click. The MovieInfoPnl constructor makes an HTTPClient call which
+						// takes a second and then parses the response which takes even longer.
+						Thread worker = new Thread(new Runnable() {
+							@Override
+							public void run() {
+								System.out.println("Ran something!");
+								MovieInfoPnl infoPnl = new MovieInfoPnl(currentMovie);
+								// Switching scenes must be done on JavaFX thread.
+								Platform.runLater(new Runnable() {
+									@Override
+									public void run() {
+										Main.switchSceneContent(infoPnl);
+									}
+								});
+							}
+						});
+						worker.start();
+
+					} else
+						loadMovies(instance.getConnectionStatus());
 				});
 
 				movieGrid.add(movieBox, j, (int) i);

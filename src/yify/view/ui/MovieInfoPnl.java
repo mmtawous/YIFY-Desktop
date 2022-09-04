@@ -7,25 +7,21 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.Transition;
-import javafx.beans.binding.DoubleBinding;
+import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.effect.ColorAdjust;
@@ -100,9 +96,17 @@ public class MovieInfoPnl extends GridPane {
 	private HBox titlePnl;
 	private GridPane topContent;
 	private GridPane bottomContent;
-	private WebView webview = new WebView();
+	private WebView webview;
 
 	public MovieInfoPnl(Movie movie) {
+		// Webview construction must be done on JavaFX thread.
+		Platform.runLater(new Runnable() {
+			@Override
+			public void run() {
+				webview = new WebView();
+			}
+		});
+
 		try {
 			System.out.println("Start movieDetails");
 			getMovieDetails(movie);
@@ -481,7 +485,7 @@ public class MovieInfoPnl extends GridPane {
 			};
 			animation.play();
 		});
-		
+
 		streamBtn.setOnMouseClicked(mouseEvent -> {
 			ChoosePlayerDialog.show(buttonsAndLinks);
 		});

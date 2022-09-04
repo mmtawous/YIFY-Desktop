@@ -27,9 +27,16 @@ import javafx.collections.ObservableList;
 import yify.view.ui.TaskViewer;
 
 public class TorrentClient {
+	private static final String TEMP_PATH = Path.of(System.getProperty("java.io.tmpdir"), "YIFY-Desktop").toString();
 	private static final String UNXI_EXEC_NAME = "/bin/zsh";
 	private static final String UNIX_COMMAND_ARG = "-c";
 	private static final String UNIX_ENV_PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+	private static final String RESOURCES_PATH = "/" + Path.of(System.getProperty("user.dir"), "resources").toString();
+	private static final String NODE_PATH = "/"
+			+ Path.of(RESOURCES_PATH, "node-v16.17.0-darwin-x64", "bin", "node").toString();
+	private static final String WEBTORRENT_PATH = "/"
+			+ Path.of(RESOURCES_PATH, "webtorrent-cli", "bin", "cmd.js").toString();
+	private static ArrayList<Process> processList = new ArrayList<Process>();
 
 	public static Process start(StreamType streamType, String torrentName, String downloadPath, Integer selectFileIndex,
 			String torrentId, ObservableList<MovieFile> fileList) throws IOException {
@@ -39,7 +46,7 @@ public class TorrentClient {
 		cmd.add(UNXI_EXEC_NAME);
 		cmd.add(UNIX_COMMAND_ARG);
 
-		String commandStr = "webtorrent ";
+		String commandStr = NODE_PATH + " " + WEBTORRENT_PATH + " ";
 
 		if (streamType == StreamType.VLC) {
 			commandStr += torrentId + " --vlc ";
@@ -58,14 +65,7 @@ public class TorrentClient {
 		if (downloadPath != null) {
 			commandStr += "--out " + downloadPath + " ";
 		} else {
-			File tempFolder = Path.of(System.getProperty("java.io.tmpdir"), "YIFY-Desktop").toFile();
-
-			// Won't work if file doesn't exist. Should work on the second run though.
-			FileUtils.forceDeleteOnExit(tempFolder);
-
-			String tempPath = tempFolder.getAbsolutePath();
-			commandStr += "--out " + tempPath + " ";
-
+			commandStr += "--out " + TEMP_PATH + " ";
 		}
 
 		if (selectFileIndex != null) {
@@ -104,7 +104,8 @@ public class TorrentClient {
 		Process p = pb.start();
 		System.out.println("Finished executing process");
 
-		// This thread is mean to complete the process of waiting for the webtorrent-cli
+		// This thread is meant to complete the process of waiting for the
+		// webtorrent-cli
 		// to write the infoServerUrl to the designated file to be read IN THE
 		// BACKGROUND while the TaskViewer initializes in the Application thread. If the
 		// TaskViewer initializes before the infoServerUrl becomes available it will
@@ -142,7 +143,36 @@ public class TorrentClient {
 			TaskViewer.addTask(torrentName, null, p, downloadSize, fileName);
 		System.out.println("End adding task and opening GUI");
 
+		processList.add(p);
+
 		return p;
+	}
+	
+	public static int getNumRunningTasks() {
+		int cnt = 0;
+
+		if (processList != null) {
+			for (int i = 0; i < processList.size(); i++) {
+				if (processList.get(i).isAlive())
+					cnt++;
+			}
+		}
+
+		return cnt;
+	}
+
+	public static void quit() {
+		File tempFile = new File(TEMP_PATH);
+		if (tempFile.exists()) {
+			try {
+				FileUtils.deleteDirectory(tempFile);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		for (int i = 0; i < processList.size(); i++) {
+			stop(processList.get(i));
+		}
 	}
 
 	public static void stop(Process p) {
@@ -223,64 +253,5 @@ public class TorrentClient {
 		fileToRead.delete();
 
 		return infoServerUrl;
-
-//		BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-//
-//		// The second line should contain the following: Info server url: {url}
-//		String rtrn = "";
-//		try {
-//			reader.readLine();
-//			rtrn = reader.readLine().split("=")[1];
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//		return rtrn;
 	}
-
-//	/**
-//	 * Used to read the stdout stream of Webtorrent-cli. This program uses this
-//	 * method to read the torrent info of the specified torrent as a string.
-//	 * 
-//	 * @param process the process that will out the torrent info
-//	 * @return a string representation of the process stdout stream
-//	 */
-//	private static String readInput(Process process) {
-//		// looks like this method might have to go :/. Look at the drawTorrent function
-//		// in the cli script. If you can find a way to make a JS script that handles all
-//		// the torrenting stuff and gets the desired values then spits them into an html
-//		// page at the loopback address with a random port in JSON format... you would
-//		// be golden
-//
-//		// 20 hours later, we are golden :)
-//		try (Scanner read = new Scanner(process.getInputStream()).useDelimiter("\\A")) {
-//			if (read.hasNext()) {
-//				String rtrn = read.next();
-//				// System.out.println(rtrn);
-//				read.close();
-//				return rtrn;
-//			} else {
-//				read.close();
-//				return "";
-//			}
-//		}
-//
-//	}
-
-//	private static ObservableList<MovieFile> parseFileList(String input) {
-//		ObservableList<MovieFile> result = FXCollections.observableArrayList();
-//
-//		JSONObject rawJSON = new JSONObject(input);
-//		String torrentName = rawJSON.getString("name");
-//		JSONArray files = rawJSON.getJSONArray("files");
-//
-//		for (int i = 0; i < files.length(); i++) {
-//			JSONObject currentF = (JSONObject) files.get(i);
-//			String fName = currentF.getString("name");
-//			long fSize = currentF.getLong("length");
-//
-//			result.add(new MovieFile(fName, fSize, torrentName, i));
-//		}
-//
-//		return result;
-//	}
 }
