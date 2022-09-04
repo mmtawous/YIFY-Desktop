@@ -721,15 +721,16 @@ public class MovieInfoPnl extends GridPane {
 				System.out.println(screenshotLinks[i]);
 				StackPane screenshotPane = new StackPane();
 				ImageView screenshotImg = new ImageView(new Image(screenshotLinks[i], true));
-				screenshotImg.setFitWidth(350);
-				screenshotImg.setFitHeight(197);
 				screenshotPane.getChildren().add(screenshotImg);
 
 				if (i == 0 && playVidIcon != null) {
 					screenshotPane.getChildren().add(playVidIcon);
 				}
 
-				Rectangle overlay = new Rectangle(350, 197);
+				Rectangle overlay = new Rectangle();
+				overlay.widthProperty().bind(screenshotImg.getImage().widthProperty());
+				overlay.heightProperty().bind(screenshotImg.getImage().heightProperty());
+				
 				overlay.setFill(Color.rgb(29, 29, 29, 0.0f));
 				screenshotPane.getChildren().add(overlay);
 
@@ -770,7 +771,8 @@ public class MovieInfoPnl extends GridPane {
 					overlay.setOnMouseClicked(mouseEvent -> {
 						screenshotPane.getChildren().clear();
 						webview.getEngine().load("https://youtube.com/embed/" + ytTrailerCode + "?autoplay=1");
-						webview.setPrefSize(350, 197);
+						webview.prefWidthProperty().bind(screenshotImg.getImage().widthProperty());
+						webview.prefHeightProperty().bind(screenshotImg.getImage().heightProperty());
 						screenshotPane.getChildren().add(webview);
 					});
 				}
@@ -788,8 +790,6 @@ public class MovieInfoPnl extends GridPane {
 		VBox castBox = new VBox(10);
 		castBox.setMaxWidth(400);
 		castBox.setPadding(new Insets(0, 0, 70, 0));
-		// castBox.setBackground(new Background(new BackgroundFill(Color.RED, null,
-		// null)));
 
 		Label topCast = new Label("Top Cast");
 		topCast.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.75f)));
@@ -802,9 +802,6 @@ public class MovieInfoPnl extends GridPane {
 			HBox actorBox = new HBox(10);
 			actorBox.setAlignment(Pos.CENTER_LEFT);
 			actorBox.setPadding(new Insets(0, 0, 10, 0));
-			// actorBox.setBackground(new Background(new BackgroundFill(Color.rgb(50, 50, 50
-			// * cnt), null, null)));
-			// actorBox.setMaxWidth(200);
 			actorBox.setBorder(new Border(new BorderStroke(Color.TRANSPARENT, Color.TRANSPARENT, Color.rgb(47, 47, 47),
 					Color.TRANSPARENT, BorderStrokeStyle.NONE, BorderStrokeStyle.NONE, BorderStrokeStyle.SOLID,
 					BorderStrokeStyle.NONE, CornerRadii.EMPTY, new BorderWidths(1), Insets.EMPTY)));
