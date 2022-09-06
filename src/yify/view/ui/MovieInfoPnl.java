@@ -438,7 +438,7 @@ public class MovieInfoPnl extends GridPane {
 		streamBtn.setPrefSize(263, 40);
 		streamBtn.setTextFill(Color.WHITE);
 		streamBtn.setFont(ARIMO_BOLD18);
-		GridPane.setMargin(streamBtn, new Insets(10, 0, 0, 40));
+		// GridPane.setMargin(streamBtn, new Insets(10, 0, 0, 40));
 		streamBtn.setOnMouseEntered(mouseEvent -> {
 			final Animation animation = new Transition() {
 
@@ -490,8 +490,9 @@ public class MovieInfoPnl extends GridPane {
 			ChoosePlayerDialog.show(buttonsAndLinks);
 		});
 
-		// GridPane.setConstraints(streamBtn, 1, 1, 1, 2);
-		topContent.add(streamBtn, 1, 2);
+		// This is janky but we are adding to the parent container of the coverImg. As
+		// long as nothing is added after that node this should work.
+		((VBox) topContent.getChildren().get(topContent.getChildren().size() - 1)).getChildren().add(streamBtn);
 
 	}
 
@@ -730,7 +731,7 @@ public class MovieInfoPnl extends GridPane {
 				Rectangle overlay = new Rectangle();
 				overlay.widthProperty().bind(screenshotImg.getImage().widthProperty());
 				overlay.heightProperty().bind(screenshotImg.getImage().heightProperty());
-				
+
 				overlay.setFill(Color.rgb(29, 29, 29, 0.0f));
 				screenshotPane.getChildren().add(overlay);
 
