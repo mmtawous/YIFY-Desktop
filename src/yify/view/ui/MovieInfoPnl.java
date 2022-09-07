@@ -14,6 +14,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.animation.Transition;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -21,6 +24,7 @@ import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
@@ -52,7 +56,10 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.web.WebView;
+import javafx.stage.Modality;
 import javafx.stage.Screen;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import yify.model.movie.Movie;
 import yify.model.movie.Torrent;
@@ -482,6 +489,7 @@ public class MovieInfoPnl extends GridPane {
 					Color vColor = Color.rgb(r, g, b);
 					streamBtn.setBackground(new Background(new BackgroundFill(vColor, new CornerRadii(3), null)));
 				}
+
 			};
 			animation.play();
 		});
@@ -717,11 +725,17 @@ public class MovieInfoPnl extends GridPane {
 			playVidIcon = new ImageView(new Image("file:assets/playBtnIcon.png", true));
 		}
 
+		ImageView[] screenshotsArr = new ImageView[3];
+
+		for (int i = 0; i < 3; i++)
+			screenshotsArr[i] = new ImageView(new Image(screenshotLinks[i].replaceFirst("medium", "large"), true));
+
 		for (int i = 0; i < screenshotLinks.length; i++) {
 			if (screenshotLinks[i] != null && !"".equals(screenshotLinks[i])) {
 				System.out.println(screenshotLinks[i]);
 				StackPane screenshotPane = new StackPane();
 				ImageView screenshotImg = new ImageView(new Image(screenshotLinks[i], true));
+
 				screenshotPane.getChildren().add(screenshotImg);
 
 				if (i == 0 && playVidIcon != null) {
@@ -770,11 +784,16 @@ public class MovieInfoPnl extends GridPane {
 
 				if (i == 0 && playVidIcon != null) {
 					overlay.setOnMouseClicked(mouseEvent -> {
-						screenshotPane.getChildren().clear();
-						webview.getEngine().load("https://youtube.com/embed/" + ytTrailerCode + "?autoplay=1");
-						webview.prefWidthProperty().bind(screenshotImg.getImage().widthProperty());
-						webview.prefHeightProperty().bind(screenshotImg.getImage().heightProperty());
-						screenshotPane.getChildren().add(webview);
+						webview.getEngine().load(
+								"https://youtube.com/embed/" + ytTrailerCode + "?autoplay=1&fs=0&playsinline=0&rel=0");
+						PopupStage webviewStage = new PopupStage(webview, this.getScene());
+						webviewStage.showStage();
+					});
+				} else {
+					final Integer currentIdx = Integer.valueOf(i);
+					overlay.setOnMouseClicked(mouseEvent -> {
+						PopupStage screenshotsStage = new PopupStage(screenshotsArr, currentIdx, this.getScene());
+						screenshotsStage.showStage();
 					});
 				}
 
@@ -840,6 +859,178 @@ public class MovieInfoPnl extends GridPane {
 		GridPane.setHalignment(castBox, HPos.RIGHT);
 
 		bottomContent.add(castBox, 0, 1);
+	}
+
+	private class PopupStage extends Stage {
+		private int pos;
+		private ImageView[] screenshots;
+		private Scene parentScene;
+
+		private PopupStage(Scene parentScene) {
+			this.parentScene = parentScene;
+			VBox parentContainer = new VBox(10);
+			Scene scene = new Scene(parentContainer);
+			scene.setFill(Color.TRANSPARENT);
+			scene.getStylesheets().add("File:CSS/transparentStage.css");
+
+			this.initModality(Modality.WINDOW_MODAL);
+			this.initOwner(parentScene.getWindow());
+			this.setScene(scene);
+			this.initStyle(StageStyle.TRANSPARENT);
+		}
+
+		public PopupStage(WebView webview, Scene parentScene) {
+			this(parentScene);
+
+			// Setting width and height to be 70 percent of the parent stage's width and
+			// height
+			webview.prefWidthProperty().bind(parentScene.getWindow().widthProperty().multiply(0.70));
+			webview.prefHeightProperty().bind(parentScene.getWindow().heightProperty().multiply(0.70));
+			initNavBtns(true);
+			((VBox) this.getScene().getRoot()).getChildren().add(webview);
+		}
+
+		public PopupStage(ImageView[] screenshots, int clickedIdx, Scene parentScene) {
+			this(parentScene);
+			this.pos = clickedIdx;
+			this.screenshots = screenshots;
+
+			for (int i = 0; i < screenshots.length; i++) {
+				screenshots[i].fitWidthProperty().bind(screenshots[i].getImage().widthProperty().divide(1.5));
+				screenshots[i].fitHeightProperty().bind(screenshots[i].getImage().heightProperty().divide(1.5));
+			}
+
+			initNavBtns(false);
+
+			((VBox) this.getScene().getRoot()).getChildren().add(screenshots[clickedIdx]);
+
+		}
+
+		private void showStage() {
+			// Handling darkening the parent stage
+			final Animation animation = new Transition() {
+				ColorAdjust adjust = new ColorAdjust(0, 0, 0, 0);
+				{
+
+					setCycleDuration(Duration.millis(180));
+					setInterpolator(Interpolator.EASE_IN);
+				}
+
+				@Override
+				protected void interpolate(double frac) {
+					adjust.setBrightness(-(frac * 0.80));
+					adjust.setContrast(-(frac * 0.40));
+					parentScene.getRoot().setEffect(adjust);
+				}
+			};
+			animation.play();
+
+			// Handling showing the PopupStage
+			this.setOpacity(0);
+			this.show();
+
+			Timeline timeline = new Timeline();
+			KeyFrame key = new KeyFrame(Duration.millis(100), new KeyValue(this.opacityProperty(), 1));
+			timeline.getKeyFrames().add(key);
+			timeline.play();
+		}
+
+		private void hideStage() {
+			// remove darkening effect
+			parentScene.getRoot().setEffect(null);
+
+			Timeline timeline = new Timeline();
+			KeyFrame key = new KeyFrame(Duration.millis(200),
+					new KeyValue(this.getScene().getRoot().opacityProperty(), 0));
+			timeline.getKeyFrames().add(key);
+			timeline.play();
+
+			timeline.setOnFinished(actionEvent -> {
+				if (webview != null) {
+					webview.getEngine().load(null);
+				}
+				this.hide();
+			});
+		}
+
+		private void initNavBtns(boolean limited) {
+			HBox navBtnsBox = new HBox(10);
+			navBtnsBox.setAlignment(Pos.TOP_RIGHT);
+
+			// Load in navBtns as images
+			if (!limited) {
+				ImageView leftArrow = new ImageView("file:assets/leftArrow.png");
+				leftArrow.setPickOnBounds(true);
+				leftArrow.setOnMouseClicked(mouseEvent -> {
+					left();
+				});
+				leftArrow.setOnMouseEntered(mouseEvent -> {
+					applyBtnEffect(leftArrow);
+				});
+				leftArrow.setOnMouseExited(mouseEvent -> {
+					leftArrow.setEffect(null);
+				});
+
+				ImageView rightArrow = new ImageView("file:assets/rightArrow.png");
+				rightArrow.setPickOnBounds(true);
+				rightArrow.setOnMouseClicked(mouseEvent -> {
+					right();
+				});
+				rightArrow.setOnMouseEntered(mouseEvent -> {
+					applyBtnEffect(rightArrow);
+				});
+				rightArrow.setOnMouseExited(mouseEvent -> {
+					rightArrow.setEffect(null);
+				});
+				navBtnsBox.getChildren().addAll(leftArrow, rightArrow);
+
+			}
+
+			ImageView close = new ImageView("file:assets/close.png");
+			close.setPickOnBounds(true);
+			close.setOnMouseClicked(mouseEvent -> {
+				hideStage();
+			});
+			close.setOnMouseEntered(mouseEvent -> {
+				applyBtnEffect(close);
+			});
+			close.setOnMouseExited(mouseEvent -> {
+				close.setEffect(null);
+			});
+
+			navBtnsBox.getChildren().add(close);
+			((VBox) this.getScene().getRoot()).getChildren().add(navBtnsBox);
+
+		}
+
+		private void left() {
+			if (pos == 0) {
+				this.pos = screenshots.length - 1;
+			} else {
+				pos--;
+			}
+
+			((VBox) this.getScene().getRoot()).getChildren().set(1, screenshots[pos]);
+		}
+
+		private void right() {
+			if (pos == screenshots.length - 1) {
+				this.pos = 0;
+			} else {
+				pos++;
+			}
+
+			((VBox) this.getScene().getRoot()).getChildren().set(1, screenshots[pos]);
+		}
+
+		private void applyBtnEffect(ImageView btn) {
+			Lighting lighting = new Lighting(new Light.Distant(45, 90, Color.WHITE));
+			ColorAdjust bright = new ColorAdjust(0, 1, 1, 1);
+			lighting.setContentInput(bright);
+			lighting.setSurfaceScale(0.0);
+
+			btn.setEffect(lighting);
+		}
 	}
 
 }
