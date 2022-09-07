@@ -33,8 +33,8 @@
 
 .scroll-bar:horizontal .track,
 .scroll-bar:vertical .track{
-    -fx-background-color :#282828;
-    -fx-border-color :#282828;
+    -fx-background-color :#1D1D1D;
+    -fx-border-color :#1D1D1D;
     -fx-background-radius : 0.0em;
     -fx-border-radius :2.0em;
 }
@@ -132,8 +132,18 @@
     -fx-background-color: #282828;
 }
 
+/** General progress bar */
+.progress-bar .bar {
+    -fx-background-radius: 5.0;
+}
+
+.progress-bar .track {
+    -fx-background-radius: 5.0;
+    -fx-background-color: #1D1D1D;
+}
 
 
+/** TaskViewer progress bar */
 .task-progress-view {
     -fx-background-color: #292929;
     -fx-border-color: #292929;
@@ -162,6 +172,7 @@
     -fx-background-radius: 5.0;
     -fx-background-color: #27292a;
 }
+
 
 .task-list-cell {
     -fx-background-color: #353535;

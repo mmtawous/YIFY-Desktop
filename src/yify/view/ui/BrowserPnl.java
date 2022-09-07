@@ -2,8 +2,6 @@ package yify.view.ui;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.concurrent.Executors;
-
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.Transition;
@@ -12,7 +10,6 @@ import javafx.collections.FXCollections;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -46,6 +43,7 @@ import yify.model.moviecatalog.searchquery.Genre;
 import yify.model.moviecatalog.searchquery.Quality;
 import yify.model.moviecatalog.searchquery.SearchQuery;
 import yify.model.moviecatalog.searchquery.SortBy;
+import yify.view.ui.util.BackgroundWorker;
 
 public class BrowserPnl extends VBox {
 	private static MovieCatalog instance;
@@ -915,21 +913,30 @@ public class BrowserPnl extends VBox {
 						// Initializing the MovieInfoPnl in a background thread to prevent GUI from
 						// hanging on click. The MovieInfoPnl constructor makes an HTTPClient call which
 						// takes a second and then parses the response which takes even longer.
-						Thread worker = new Thread(new Runnable() {
+						BackgroundWorker.submit(new Runnable() {
 							@Override
 							public void run() {
-								System.out.println("Ran something!");
+								Platform.runLater(new Runnable() {
+									@Override
+									public void run() {
+										// Set the buffering bar to visible here
+										Main.showBufferBar();
+									}
+								});
+
 								MovieInfoPnl infoPnl = new MovieInfoPnl(currentMovie);
 								// Switching scenes must be done on JavaFX thread.
 								Platform.runLater(new Runnable() {
 									@Override
 									public void run() {
+										// Hide the buffering bar here
+										Main.hideBufferBar();
+										
 										Main.switchSceneContent(infoPnl);
 									}
 								});
 							}
 						});
-						worker.start();
 
 					} else
 						loadMovies(instance.getConnectionStatus());

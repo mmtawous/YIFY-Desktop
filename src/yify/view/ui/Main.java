@@ -22,6 +22,8 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -31,8 +33,10 @@ import yify.model.torrentclient.TorrentClient;
 public class Main extends Application implements QuitHandler, AppReopenedListener {
 	private static Stage primaryStage;
 	private static MovieCatalog instance;
-	private static ScrollPane root;
+	private static ScrollPane mainContent;
+	private static StackPane root;
 	private static BrowserPnl browserPnl;
+	private static BufferBarPnl bufferBarPnl;
 
 	@Override
 	public void start(Stage primaryStage) {
@@ -43,19 +47,27 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 		// early on
 		instance = MovieCatalog.instance();
 		browserPnl = new BrowserPnl();
+		bufferBarPnl = new BufferBarPnl();
+		bufferBarPnl.setVisible(false);
 
 		/*********************** Setting Scene for movieBrowser START *******/
 
-		root = new ScrollPane();
-		root.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
-		root.setFitToWidth(true);
-		root.setFitToHeight(true);
-		root.setContent(browserPnl);
+		root = new StackPane();
+		mainContent = new ScrollPane();
+		
+		
+		mainContent.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
+		mainContent.setFitToWidth(true);
+		mainContent.setFitToHeight(true);
+		mainContent.setContent(browserPnl);
+		
+		
+		root.getChildren().addAll(mainContent, bufferBarPnl);
 
 		Scene scene = new Scene(root);
 		scene.setFill(Color.rgb(29, 29, 29, 1f));
 
-		scene.getStylesheets().add("File:CSS/style.css");
+		scene.getStylesheets().addAll("File:CSS/style.css", "File:CSS/transparentStage.css");
 		primaryStage.setTitle("YIFY-Desktop");
 		primaryStage.setScene(scene);
 
@@ -82,7 +94,6 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 
 		// Trick to avoid blank stage for a second before displaying content.
 		Thread trick = new Thread(new Runnable() {
-
 			@Override
 			public void run() {
 				Platform.runLater(new Runnable() {
@@ -172,9 +183,17 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 			}
 		});
 	}
+	
+	public static void showBufferBar() {
+		bufferBarPnl.setVisible(true);
+	}
+	
+	public static void hideBufferBar() {
+		bufferBarPnl.setVisible(false);
+	}
 
 	public static void switchSceneContent(Node node) {
-		root.setContent(node);
+		mainContent.setContent(node);
 	}
 
 	public static Node getBrowserPnl() {
