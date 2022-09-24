@@ -9,9 +9,11 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.ArrayList;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import javafx.scene.image.Image;
 import yify.model.movie.Movie;
 import yify.model.moviecatalog.searchquery.SearchQuery;
@@ -44,7 +46,7 @@ public class MovieCatalog {
 	 */
 	private ArrayList<Movie> currentPage;
 	/** The unparsed response from the YTS.mx server. */
-	private JSONObject rawPage;
+	private JsonObject rawPage;
 	/**
 	 * A search query made by the user containing various parameters and their
 	 * values to be sent to the YTS.mx servers. /** An HttpClient to be used to make
@@ -103,7 +105,7 @@ public class MovieCatalog {
 		int rating = searchQuery.getRating();
 		String sortBy = searchQuery.getSortBy();
 		int pageNum = searchQuery.getPageNum();
-
+		
 		makeRequest(searchTerm, quality, genre, Integer.toString(rating), sortBy, pageNum);
 		this.searchQuery = searchQuery;
 	}
@@ -117,7 +119,7 @@ public class MovieCatalog {
 	}
 
 	public int getPageNumber() {
-		return (int) rawPage.get("page_number");
+		return rawPage.get("page_number").getAsInt();
 	}
 
 	public int getNumPages() {
@@ -171,6 +173,7 @@ public class MovieCatalog {
 	 */
 	private void makeRequest(String searchTerm, String quality, String genre, String rating, String sortBy, int pageNum)
 			throws IOException, InterruptedException {
+		
 
 //		String requestString = LIST_MOVIES + "?" + SEARCH_PARAM + searchTerm + "&" + QUALITY_PARAM + quality + "&"
 //				+ GENRE_PARAM + genre + "&" + RATING_PARAM + ("ALl".equals(rating) ? "0" : rating) + "&" + SORT_PARAM
@@ -204,7 +207,7 @@ public class MovieCatalog {
 			BrowserPnl.loadMovies(connectionOkay);
 			return;
 		}
-		
+
 		setConnectionOkay(true);
 
 		// the response:
@@ -218,48 +221,39 @@ public class MovieCatalog {
 		System.out.println(jsonString);
 		System.out.println(uri.toString());
 
-		rawPage = (JSONObject) new JSONObject(jsonString).get("data");
+		rawPage = new Gson().fromJson(jsonString, JsonObject.class).get("data").getAsJsonObject();
 		parseRawPage();
 		BrowserPnl.loadMovies(connectionOkay);
 
 	}
 
 	private void parseRawPage() {
-		// System.out.println(rawPage.toString());
-
 		// clearing before each search query
 		if (!currentPage.isEmpty()) {
 			currentPage.clear();
 		}
 
-		JSONArray moviesInPage;
-		try {
-			// If the search doesn't return anything the JSON response will be missing the
-			// movies array so this code can throw an exception.
-			moviesInPage = (JSONArray) rawPage.get("movies");
-		} catch (JSONException e1) {
-			// Return for now. current page should remain empty and BrowserPnl.loadMovies()
-			// will handle that.
+		// If the search doesn't return anything the JSON response will be missing the
+		// movies array so this code can throw an exception.
+		JsonArray moviesInPage = rawPage.getAsJsonArray("movies");
+		if (moviesInPage == null) {
 			return;
 		}
 
-		for (int i = 0; i < moviesInPage.length(); i++) {
-			JSONObject currentMov;
+		for (int i = 0; i < moviesInPage.size(); i++) {
+			JsonObject currentMov = moviesInPage.get(i).getAsJsonObject();
 
-			currentMov = (JSONObject) moviesInPage.get(i);
+			int id = currentMov.getAsJsonPrimitive("id").getAsInt();
+			Image thumbnail = new Image(currentMov.getAsJsonPrimitive("medium_cover_image").getAsString(), true);
+			String title = currentMov.getAsJsonPrimitive("title_english").getAsString();
+			int year = currentMov.getAsJsonPrimitive("year").getAsInt();
+			float rating = currentMov.getAsJsonPrimitive("rating").getAsFloat();
+			String lang = currentMov.getAsJsonPrimitive("language").getAsString();
 
-			int id = currentMov.getInt("id");
-			Image thumbnail = new Image((String) currentMov.get("medium_cover_image"), true);
-			String title = currentMov.getString("title_english");
-			int year = currentMov.getInt("year");
-			float rating = currentMov.getFloat("rating");
-			String lang = currentMov.getString("language");
-
+			JsonArray genresJson = currentMov.getAsJsonArray("genres");
 			String[] genres = null;
-			try {
-				genres = parseGenres(currentMov.getJSONArray("genres"));
-			} catch (JSONException e) {
-				// Leave it null
+			if (genresJson != null) {
+				genres = parseGenres(genresJson);
 			}
 
 			currentPage.add(new Movie(id, thumbnail, title, year, rating, genres, lang));
@@ -269,22 +263,22 @@ public class MovieCatalog {
 
 	}
 
-	private String[] parseGenres(JSONArray genresJson) {
-		String[] genres = new String[genresJson.length()];
+	private String[] parseGenres(JsonArray genresJson) {
+		String[] genres = new String[genresJson.size()];
 
 		for (int i = 0; i < genres.length; i++) {
-			genres[i] = genresJson.getString(i);
+			genres[i] = genresJson.get(i).getAsString();
 		}
 
 		return genres;
 	}
 
 	private int getLimit() {
-		return (int) rawPage.get("limit");
+		return rawPage.get("limit").getAsInt();
 	}
 
 	private int getMovieCount() {
-		return (int) rawPage.get("movie_count");
+		return rawPage.get("movie_count").getAsInt();
 	}
 
 }

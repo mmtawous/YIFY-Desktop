@@ -576,12 +576,11 @@ public class BrowserPnl extends VBox {
 	}
 
 	private static void fireNavButton(Button btn) {
+
 		if (instance == null) {
 			instance = MovieCatalog.instance();
 		}
-
 		try {
-
 			if ("« First".equals(btn.getText())) {
 				instance.setPageToFirst();
 			} else if ("« Previous".equals(btn.getText())) {
@@ -602,6 +601,7 @@ public class BrowserPnl extends VBox {
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 		}
+
 	}
 
 	private static int getPageNum() {
@@ -931,7 +931,7 @@ public class BrowserPnl extends VBox {
 									public void run() {
 										// Hide the buffering bar here
 										Main.hideBufferBar();
-										
+
 										Main.switchSceneContent(infoPnl);
 									}
 								});

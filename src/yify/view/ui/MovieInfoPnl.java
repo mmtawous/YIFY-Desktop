@@ -9,9 +9,13 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
@@ -105,7 +109,7 @@ public class MovieInfoPnl extends GridPane {
 	private GridPane bottomContent;
 	private WebView webview;
 
-	public MovieInfoPnl(Movie movie) {
+	public MovieInfoPnl(@SuppressWarnings("exports") Movie movie) {
 		// Webview construction must be done on JavaFX thread.
 		Platform.runLater(new Runnable() {
 			@Override
@@ -145,11 +149,14 @@ public class MovieInfoPnl extends GridPane {
 		topContent.setBackground(new Background(new BackgroundFill(gradient, null, null)));
 		topContent.setPadding(new Insets(25, 0, 0, 45));
 		// topContent.setGridLinesVisible(true);
-
+		
+		while (backgroundImg.getProgress() != 1.0) 
+			Thread.onSpinWait();
+		
 		ImageView backgroundView = new ImageView(backgroundImg);
 		backgroundView.fitWidthProperty().bind(titlePnl.widthProperty());
 		backgroundView.setFitHeight(580);
-
+		
 		// Image goes down before overlay
 		this.add(backgroundView, 0, 1);
 		this.add(topContent, 0, 1);
@@ -281,28 +288,28 @@ public class MovieInfoPnl extends GridPane {
 		System.out.println(jsonString);
 		System.out.println(uri.toString());
 
-		JSONObject rawPage = (JSONObject) ((JSONObject) new JSONObject(jsonString).get("data")).get("movie");
+		JsonObject rawPage = new Gson().fromJson(jsonString, JsonObject.class).getAsJsonObject("data").getAsJsonObject("movie");
 		System.out.println("Start parse");
 		parseRawPage(rawPage);
 		System.out.println("End parse");
 	}
 
-	private void parseRawPage(JSONObject rawPage) {
-		backgroundImg = new Image(rawPage.getString("background_image"), false);
-		plotSummary = rawPage.getString("description_full");
-		JSONArray rawTors = rawPage.getJSONArray("torrents");
+	private void parseRawPage(JsonObject rawPage) {
+		backgroundImg = new Image(rawPage.get("background_image").getAsString(), true);
+		plotSummary = rawPage.get("description_full").getAsString();
+		JsonArray rawTors = rawPage.get("torrents").getAsJsonArray();
 
-		torrents = new Torrent[rawTors.length()];
+		torrents = new Torrent[rawTors.size()];
 
-		for (int i = 0; i < rawTors.length(); i++) {
-			JSONObject rawTorrent = (JSONObject) rawTors.get(i);
+		for (int i = 0; i < rawTors.size(); i++) {
+			JsonObject rawTorrent = rawTors.get(i).getAsJsonObject();
 
-			String url = rawTorrent.getString("url");
-			String quality = rawTorrent.getString("quality");
-			String type = rawTorrent.getString("type");
-			int seeds = rawTorrent.getInt("seeds");
-			int peers = rawTorrent.getInt("peers");
-			String size = rawTorrent.getString("size");
+			String url = rawTorrent.get("url").getAsString();
+			String quality = rawTorrent.get("quality").getAsString();
+			String type = rawTorrent.get("type").getAsString();
+			int seeds = rawTorrent.get("seeds").getAsInt();
+			int peers = rawTorrent.get("peers").getAsInt();
+			String size = rawTorrent.get("size").getAsString();
 
 			torrents[i] = new Torrent(url, quality, type, seeds, peers, size);
 
@@ -310,31 +317,33 @@ public class MovieInfoPnl extends GridPane {
 
 		screenshotLinks = new String[3];
 		for (int i = 0; i < 3; i++) {
-			screenshotLinks[i] = rawPage.getString("medium_screenshot_image" + (i + 1));
+			screenshotLinks[i] = rawPage.get("medium_screenshot_image" + (i + 1)).getAsString();
 		}
 
-		ytTrailerCode = rawPage.getString("yt_trailer_code");
+		ytTrailerCode = rawPage.get("yt_trailer_code").getAsString();
 
 		cast = new LinkedHashMap<String, String>();
 
-		JSONArray rawCast = null;
-		try {
-			rawCast = rawPage.getJSONArray("cast");
-		} catch (JSONException e) {
+		JsonArray rawCast = rawPage.getAsJsonArray("cast");
+		if (rawCast == null) {
 			return;
 		}
-		for (int i = 0; i < rawCast.length(); i++) {
-			JSONObject currentCast = rawCast.getJSONObject(i);
-			String name = currentCast.getString("name");
-			String characterName = currentCast.getString("character_name");
+		
+		for (int i = 0; i < rawCast.size(); i++) {
+			JsonObject currentCast = rawCast.get(i).getAsJsonObject();
+			String name = currentCast.get("name").getAsString();
+			String characterName = currentCast.get("character_name").getAsString();
 
-			String thumbnail;
-			try {
-				thumbnail = currentCast.getString("url_small_image");
-			} catch (JSONException e) {
+			JsonElement thumbnailElement = currentCast.get("url_small_image");
+			
+			String thumbnail = null;
+			if (thumbnailElement != null) 
+				thumbnail = thumbnailElement.getAsString();
+			
+			if (thumbnail == null) {
 				thumbnail = DEFAULT_THUMBNAIL;
 			}
-
+			
 			cast.put(name + ":" + characterName, thumbnail);
 		}
 

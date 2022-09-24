@@ -11,13 +11,9 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.commons.io.file.Counters.Counter;
 import org.controlsfx.control.TaskProgressView;
-import org.json.JSONObject;
-
-import javafx.application.Platform;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
@@ -195,13 +191,13 @@ public class TaskViewer {
 				// Should hopefully never happen.
 				return;
 
-			JSONObject jsonResponse = new JSONObject(jsonString);
-			this.downloadSpeed = jsonResponse.getString("speed");
-			this.downloaded = jsonResponse.getLong("downloaded");
-			this.uploaded = jsonResponse.getString("uploaded");
-			this.runTime = jsonResponse.getString("runtime");
-			this.timeEstimate = jsonResponse.getString("estimate");
-			this.peers = jsonResponse.getString("peers");
+			JsonObject jsonResponse = JsonParser.parseString(jsonString).getAsJsonObject();
+			this.downloadSpeed = jsonResponse.get("speed").getAsString();
+			this.downloaded = jsonResponse.get("downloaded").getAsLong();
+			this.uploaded = jsonResponse.get("uploaded").getAsString();
+			this.runTime = jsonResponse.get("runtime").getAsString();
+			this.timeEstimate = jsonResponse.get("estimate").getAsString();
+			this.peers = jsonResponse.get("peers").getAsString();
 		}
 
 		private String constructMessage() {
