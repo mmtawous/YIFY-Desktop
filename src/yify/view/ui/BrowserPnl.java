@@ -81,6 +81,8 @@ public class BrowserPnl extends VBox {
 
 		Image ytsLogo = new Image("File:assets/logo-YTS.png");
 		ImageView imageView = new ImageView(ytsLogo);
+		imageView.setFitWidth(127);
+		imageView.setFitHeight(40);
 		titlePnl.getChildren().add(imageView);
 
 		ImageView taskViewerIcon = new ImageView(new Image("File:assets/taskManIcon.png"));

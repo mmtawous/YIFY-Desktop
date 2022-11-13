@@ -63,7 +63,9 @@ public class TorrentClient {
 		}
 
 		if (downloadPath != null) {
-			commandStr += "--out " + downloadPath + " ";
+			// Adding quotes around download path to santize it. (Some file names have spaces so it
+			// causes parse problems with webtorrent).
+			commandStr += "--out " + "\"" + downloadPath + "\"" + " ";
 		} else {
 			commandStr += "--out " + TEMP_PATH + " ";
 		}

@@ -218,7 +218,7 @@ public class MovieCatalog {
 			// Should hopefully never happen.
 			return;
 
-		System.out.println(jsonString);
+//		System.out.println(jsonString);
 		System.out.println(uri.toString());
 
 		rawPage = new Gson().fromJson(jsonString, JsonObject.class).get("data").getAsJsonObject();

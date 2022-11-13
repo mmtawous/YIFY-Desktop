@@ -190,6 +190,9 @@ public class MovieInfoPnl extends GridPane {
 
 		Image ytsLogo = new Image("File:assets/logo-YTS.png");
 		ImageView imageView = new ImageView(ytsLogo);
+		imageView.setFitWidth(127);
+		imageView.setFitHeight(40);
+		
 		titlePnl.getChildren().add(imageView);
 
 		ImageView taskViewerIcon = new ImageView(new Image("File:assets/taskManIcon.png"));
@@ -285,7 +288,7 @@ public class MovieInfoPnl extends GridPane {
 		else
 			// Should hopefully never happen.
 			return;
-		System.out.println(jsonString);
+		//System.out.println(jsonString);
 		System.out.println(uri.toString());
 
 		JsonObject rawPage = new Gson().fromJson(jsonString, JsonObject.class).getAsJsonObject("data").getAsJsonObject("movie");
@@ -793,8 +796,10 @@ public class MovieInfoPnl extends GridPane {
 
 				if (i == 0 && playVidIcon != null) {
 					overlay.setOnMouseClicked(mouseEvent -> {
+						
+						// Disabling controls because of semi-transparent overlay that shows up on hover.
 						webview.getEngine().load(
-								"https://youtube.com/embed/" + ytTrailerCode + "?autoplay=1&fs=0&playsinline=0&rel=0");
+								"https://youtube.com/embed/" + ytTrailerCode + "?autoplay=1&fs=0&playsinline=1&controls=0&rel=0");
 						PopupStage webviewStage = new PopupStage(webview, this.getScene());
 						webviewStage.showStage();
 					});
