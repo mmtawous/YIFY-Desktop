@@ -8,6 +8,19 @@ public class SearchQuery {
 	private SortBy sortBy;
 	private int pageNum;
 
+	/** A constant for the page parameter as per the YTS.mx API */
+	public static final String PAGE_PARAM = "page=";
+	/** A constant for the search parameter as per the YTS.mx API */
+	public static final String SEARCH_PARAM = "query_term=";
+	/** A constant for the quality parameter as per the YTS.mx API */
+	public static final String QUALITY_PARAM = "quality=";
+	/** A constant for the genre parameter as per the YTS.mx API */
+	public static final String GENRE_PARAM = "genre=";
+	/** A constant for the rating parameter as per the YTS.mx API */
+	public static final String RATING_PARAM = "minimum_rating=";
+	/** A constant for the sort by parameter as per the YTS.mx API */
+	public static final String SORT_PARAM = "sort_by=";
+
 	private SearchQuery(String searchTerm, Quality quality, Genre genre, int rating, SortBy sortBy, int pageNum) {
 		setQuality(quality);
 		setRating(rating);
@@ -15,6 +28,12 @@ public class SearchQuery {
 		setGenre(genre);
 		setSortBy(sortBy);
 		setPageNumConst(pageNum);
+	}
+	
+	public String getUrlString() {
+		return SEARCH_PARAM + searchTerm + "&" + QUALITY_PARAM + getQuality() + "&" + GENRE_PARAM + getGenre() + "&"
+				+ RATING_PARAM + rating + "&" + SORT_PARAM + getSortBy() + "&" + PAGE_PARAM
+				+ pageNum;
 	}
 
 	public int getPageNum() {

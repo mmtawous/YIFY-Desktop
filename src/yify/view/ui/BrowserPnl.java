@@ -633,8 +633,8 @@ public class BrowserPnl extends VBox {
 		initNavBtns();
 	}
 
-	public static void loadMovies(boolean connectionOkay) {
-		System.out.println(connectionOkay);
+	public static GridPane loadMovies(boolean connectionOkay) {
+		System.out.println("Connection Okay: " + connectionOkay);
 
 		GridPane movieGrid;
 
@@ -745,7 +745,7 @@ public class BrowserPnl extends VBox {
 			noConnectionBox.getChildren().addAll(noConnectionLbl, noConnectionIcon, reloadBtn);
 			movieGrid.add(noConnectionBox, 0, 0);
 			moviePnl.getChildren().add(movieGrid);
-			return;
+			return null;
 		}
 
 		ArrayList<Movie> movies = instance.getCurrentPage();
@@ -758,8 +758,10 @@ public class BrowserPnl extends VBox {
 			movieGrid.setAlignment(Pos.CENTER);
 			movieGrid.add(noResults, 0, 0);
 			moviePnl.getChildren().add(movieGrid);
-			return;
+			return null;
 		}
+		
+		//****************END ERROR CASES *****************
 
 		int cnt = 0;
 		float rows = movies.size() / 5f;
@@ -951,6 +953,15 @@ public class BrowserPnl extends VBox {
 		}
 
 		moviePnl.getChildren().add(movieGrid);
+		return movieGrid;
+	}
 
+	public static void updateMovieGrid(GridPane movieGrid) {
+		System.out.println("Updated grid");
+		
+		if (moviePnl.getChildren().size() > 2) 
+			moviePnl.getChildren().remove(2);
+
+		moviePnl.getChildren().add(movieGrid);
 	}
 }

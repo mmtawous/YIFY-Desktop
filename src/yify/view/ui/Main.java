@@ -53,14 +53,12 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 
 		root = new StackPane();
 		mainContent = new ScrollPane();
-		
-		
+
 		mainContent.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
 		mainContent.setFitToWidth(true);
 		mainContent.setFitToHeight(true);
 		mainContent.setContent(browserPnl);
-		
-		
+
 		root.getChildren().addAll(mainContent, bufferBarPnl);
 
 		Scene scene = new Scene(root);
@@ -170,23 +168,25 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 	@Override
 	public void appReopened(AppReopenedEvent e) {
 		System.out.println("Reopened");
-		Platform.runLater(new Runnable() {
-			@Override
-			public void run() {
-				primaryStage.setOpacity(0);
-				primaryStage.show();
-				Timeline timeline = new Timeline();
-				KeyFrame key = new KeyFrame(Duration.millis(100), new KeyValue(primaryStage.opacityProperty(), 1));
-				timeline.getKeyFrames().add(key);
-				timeline.play();
-			}
-		});
+		if (!primaryStage.isFocused()) {
+			Platform.runLater(new Runnable() {
+				@Override
+				public void run() {
+					primaryStage.setOpacity(0);
+					primaryStage.show();
+					Timeline timeline = new Timeline();
+					KeyFrame key = new KeyFrame(Duration.millis(100), new KeyValue(primaryStage.opacityProperty(), 1));
+					timeline.getKeyFrames().add(key);
+					timeline.play();
+				}
+			});
+		}
 	}
-	
+
 	public static void showBufferBar() {
 		bufferBarPnl.setVisible(true);
 	}
-	
+
 	public static void hideBufferBar() {
 		bufferBarPnl.setVisible(false);
 	}

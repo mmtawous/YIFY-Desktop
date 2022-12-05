@@ -9,13 +9,15 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
 import javafx.scene.image.Image;
 import yify.model.movie.Movie;
+import yify.model.movie.PageState;
 import yify.model.moviecatalog.searchquery.SearchQuery;
 import yify.view.ui.BrowserPnl;
 
@@ -36,15 +38,25 @@ public class MovieCatalog {
 	 * fixed interval of time.
 	 */
 	public ConnectionThread connectionThread;
+
 	/* A boolean denoting the current status of the client-server connection */
 	private static boolean connectionOkay = true;
+
 	/** The singleton instance for the MovieCatalog class. */
 	private static MovieCatalog instance;
+
 	/**
 	 * The ArrayList holding the current page of parsed Movie objects in the
 	 * catalog.
 	 */
 	private ArrayList<Movie> currentPage;
+
+	/**
+	 * Stores instances of GridPane representing pages that have been previously
+	 * loaded. The key is the ID of the page and the value is the page.
+	 */
+	private LinkedHashMap<Integer, PageState> loaded;
+
 	/** The unparsed response from the YTS.mx server. */
 	private JsonObject rawPage;
 	/**
@@ -62,19 +74,6 @@ public class MovieCatalog {
 	public static final String SCHEME = "https";
 	public static final String HOST = "yts.torrentbay.to";
 	public static final String PATH = "/api/v2/list_movies.json/";
-
-	/** A constant for the page parameter as per the YTS.mx API */
-	public static final String PAGE_PARAM = "page=";
-	/** A constant for the search parameter as per the YTS.mx API */
-	public static final String SEARCH_PARAM = "query_term=";
-	/** A constant for the quality parameter as per the YTS.mx API */
-	public static final String QUALITY_PARAM = "quality=";
-	/** A constant for the genre parameter as per the YTS.mx API */
-	public static final String GENRE_PARAM = "genre=";
-	/** A constant for the rating parameter as per the YTS.mx API */
-	public static final String RATING_PARAM = "minimum_rating=";
-	/** A constant for the sort by parameter as per the YTS.mx API */
-	public static final String SORT_PARAM = "sort_by=";
 
 	/**
 	 * Can be used to obtain the static instance of the MovieCatalog class.
@@ -96,6 +95,17 @@ public class MovieCatalog {
 		connectionThread = new ConnectionThread(10);
 		currentPage = new ArrayList<Movie>();
 
+		loaded = new LinkedHashMap<Integer, PageState>(10, 0.75f, true) {
+			private static final long serialVersionUID = 1L;
+			private static final int MAX_ENTRIES = 10;
+
+			@Override
+			protected boolean removeEldestEntry(Map.Entry<Integer, PageState> eldest) {
+				return (size() > MAX_ENTRIES);
+			}
+
+		};
+
 	}
 
 	public void makeRequest(SearchQuery searchQuery) throws IOException, InterruptedException {
@@ -106,8 +116,9 @@ public class MovieCatalog {
 		String sortBy = searchQuery.getSortBy();
 		int pageNum = searchQuery.getPageNum();
 		
-		makeRequest(searchTerm, quality, genre, Integer.toString(rating), sortBy, pageNum);
 		this.searchQuery = searchQuery;
+		
+		makeRequest(searchTerm, quality, genre, Integer.toString(rating), sortBy, pageNum);
 	}
 
 	public static void setConnectionOkay(boolean connectionOkayPar) {
@@ -119,7 +130,7 @@ public class MovieCatalog {
 	}
 
 	public int getPageNumber() {
-		return rawPage.get("page_number").getAsInt();
+		return searchQuery.getPageNum();
 	}
 
 	public int getNumPages() {
@@ -173,15 +184,16 @@ public class MovieCatalog {
 	 */
 	private void makeRequest(String searchTerm, String quality, String genre, String rating, String sortBy, int pageNum)
 			throws IOException, InterruptedException {
-		
 
-//		String requestString = LIST_MOVIES + "?" + SEARCH_PARAM + searchTerm + "&" + QUALITY_PARAM + quality + "&"
-//				+ GENRE_PARAM + genre + "&" + RATING_PARAM + ("ALl".equals(rating) ? "0" : rating) + "&" + SORT_PARAM
-//				+ sortBy + PAGE_PARAM + pageNum;
+		String queryString = searchQuery.getUrlString();
 
-		String queryString = SEARCH_PARAM + searchTerm + "&" + QUALITY_PARAM + quality + "&" + GENRE_PARAM + genre + "&"
-				+ RATING_PARAM + ("ALl".equals(rating) ? "0" : rating) + "&" + SORT_PARAM + sortBy + "&" + PAGE_PARAM
-				+ pageNum;
+		// Check if have loaded this page before. If we have then just display it and
+		// finish early
+		PageState result = loaded.get(queryString.hashCode());
+		if (result != null) {
+			BrowserPnl.updateMovieGrid(result.getMovieGrid());
+			return;
+		}
 
 		URI uri = null;
 		try {
@@ -204,6 +216,8 @@ public class MovieCatalog {
 			// assume that the connection is bad.
 			e.printStackTrace();
 			setConnectionOkay(false);
+
+			// This will just display the network error page
 			BrowserPnl.loadMovies(connectionOkay);
 			return;
 		}
@@ -218,12 +232,20 @@ public class MovieCatalog {
 			// Should hopefully never happen.
 			return;
 
-//		System.out.println(jsonString);
 		System.out.println(uri.toString());
 
 		rawPage = new Gson().fromJson(jsonString, JsonObject.class).get("data").getAsJsonObject();
 		parseRawPage();
-		BrowserPnl.loadMovies(connectionOkay);
+
+		// Saving the returned page in a HashMap.
+		// This allows for quick to a page that has already been loaded.
+
+		// This could be dangerous if a user loads too many pages, memory problems will
+		// happen. We need to discard the least recently accessed page if we are storing
+		// over a certain threshold of pages. (Done in constructor using LinkedHashMap
+		// API)
+		loaded.put(queryString.hashCode(), new PageState(BrowserPnl.loadMovies(connectionOkay),
+				rawPage.get("limit").getAsInt(), rawPage.get("movie_count").getAsInt()));
 
 	}
 
@@ -274,11 +296,11 @@ public class MovieCatalog {
 	}
 
 	private int getLimit() {
-		return rawPage.get("limit").getAsInt();
+		return loaded.get(searchQuery.getUrlString().hashCode()).getPageLimit();
 	}
 
 	private int getMovieCount() {
-		return rawPage.get("movie_count").getAsInt();
+		return loaded.get(searchQuery.getUrlString().hashCode()).getMovieCount();
 	}
 
 }
