@@ -9,13 +9,10 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
@@ -71,7 +68,6 @@ import yify.model.moviecatalog.MovieCatalog;
 import yify.model.torrentclient.MovieFile;
 import yify.model.torrentclient.StreamType;
 import yify.model.torrentclient.TorrentClient;
-import yify.view.ui.util.BackgroundWorker;
 
 public class MovieInfoPnl extends GridPane {
 	/** The parts of the known YTS.mx URL split up */
@@ -324,8 +320,10 @@ public class MovieInfoPnl extends GridPane {
 		}
 
 		screenshotLinks = new String[3];
+		
+		// Switching to a more reliable source for screenshots
 		for (int i = 0; i < 3; i++) {
-			screenshotLinks[i] = rawPage.get("medium_screenshot_image" + (i + 1)).getAsString();
+			screenshotLinks[i] = rawPage.get("medium_screenshot_image" + (i + 1)).getAsString().replace("yts.torrentbay.to", "img.yts.mx");
 		}
 
 		ytTrailerCode = rawPage.get("yt_trailer_code").getAsString();

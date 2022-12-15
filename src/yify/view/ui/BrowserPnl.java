@@ -368,18 +368,22 @@ public class BrowserPnl extends VBox {
 
 		if (moviePnl.getChildren().size() >= 2) {
 			navBtnsBox = (HBox) moviePnl.getChildren().get(1);
-			navBtnsBox.getChildren().clear();
+			Platform.runLater(() -> {
+				navBtnsBox.getChildren().clear();
+			});
 		} else {
 			navBtnsBox = new HBox(5);
+		}
+
+		if (moviePnl.getChildren().size() < 2) {
+			Platform.runLater(() -> {
+				moviePnl.getChildren().add(navBtnsBox);
+			});
 		}
 
 		// setting alignment and padding
 		navBtnsBox.setPadding(new Insets(0, 0, 20, 0));
 		navBtnsBox.setAlignment(Pos.TOP_CENTER);
-
-		if (moviePnl.getChildren().size() < 2) {
-			moviePnl.getChildren().add(navBtnsBox);
-		}
 
 		if (!MovieCatalog.instance().getConnectionStatus()) {
 			System.out.println("Returned because bad connection");
@@ -424,7 +428,9 @@ public class BrowserPnl extends VBox {
 					fireNavButton(navFirst);
 				});
 
-				navBtnsBox.getChildren().add(navFirst);
+				Platform.runLater(() -> {
+					navBtnsBox.getChildren().add(navFirst);
+				});
 			}
 
 			// Only add the "previous" button if the page number is greater than 1.
@@ -449,7 +455,9 @@ public class BrowserPnl extends VBox {
 					fireNavButton(navPrevious);
 				});
 
-				navBtnsBox.getChildren().add(navPrevious);
+				Platform.runLater(() -> {
+					navBtnsBox.getChildren().add(navPrevious);
+				});
 			}
 
 			// Adding page buttons based on the number of pages to be displayed. The maximum
@@ -492,7 +500,11 @@ public class BrowserPnl extends VBox {
 					fireNavButton((Button) mouseEvent.getSource());
 				});
 
-				navBtnsBox.getChildren().add(numButtons[i - startNum]);
+				Button curr = numButtons[i - startNum];
+
+				Platform.runLater(() -> {
+					navBtnsBox.getChildren().add(curr);
+				});
 			}
 
 			// Signifies that there are more pages to be displayed after the current batch
@@ -507,7 +519,9 @@ public class BrowserPnl extends VBox {
 						new CornerRadii(3), new BorderWidths(1))));
 				moreAhead.setPrefSize(33, 40);
 
-				navBtnsBox.getChildren().add(moreAhead);
+				Platform.runLater(() -> {
+					navBtnsBox.getChildren().add(moreAhead);
+				});
 			}
 
 			// Only add this button if we are not on the last page.
@@ -533,7 +547,9 @@ public class BrowserPnl extends VBox {
 					fireNavButton(next);
 				});
 
-				navBtnsBox.getChildren().add(next);
+				Platform.runLater(() -> {
+					navBtnsBox.getChildren().add(next);
+				});
 			}
 
 		}
@@ -582,27 +598,45 @@ public class BrowserPnl extends VBox {
 		if (instance == null) {
 			instance = MovieCatalog.instance();
 		}
-		try {
-			if ("« First".equals(btn.getText())) {
-				instance.setPageToFirst();
-			} else if ("« Previous".equals(btn.getText())) {
-				instance.previousPage();
-			} else if ("Next »".equals(btn.getText())) {
-				instance.nextPage();
-			} else {
-				try {
-					int pageNum = Integer.parseInt(btn.getText());
-					instance.setPageTo(pageNum);
-					// Hopefully will never happen
-				} catch (NumberFormatException e) {
-					e.printStackTrace();
+
+		BackgroundWorker.submit(() -> {
+
+			Platform.runLater(() -> {
+				Main.showBufferBar();
+			});
+
+			try {
+				if ("« First".equals(btn.getText())) {
+					instance.setPageToFirst();
+				} else if ("« Previous".equals(btn.getText())) {
+					instance.previousPage();
+				} else if ("Next »".equals(btn.getText())) {
+					instance.nextPage();
+				} else {
+					try {
+						int pageNum = Integer.parseInt(btn.getText());
+						instance.setPageTo(pageNum);
+						// Hopefully will never happen
+					} catch (NumberFormatException e) {
+						e.printStackTrace();
+					}
 				}
+				initNavBtns();
+				// Also hopefully will never happen but more likely :)
+			} catch (IOException | InterruptedException e) {
+				e.printStackTrace();
 			}
-			initNavBtns();
-			// Also hopefully will never happen but more likely :)
-		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
-		}
+
+			// Switching scenes must be done on JavaFX thread.
+			Platform.runLater(new Runnable() {
+				@Override
+				public void run() {
+					// Hide the buffering bar here
+					Main.hideBufferBar();
+				}
+			});
+
+		});
 
 	}
 
@@ -625,12 +659,30 @@ public class BrowserPnl extends VBox {
 
 		SearchQuery searchQuery = SearchQuery.getSearchQuery(searchTerm, quality, genre, rating, sortBy, 1);
 
-		try {
-			instance.makeRequest(searchQuery);
-		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
-		}
-		initNavBtns();
+		BackgroundWorker.submit(() -> {
+
+			Platform.runLater(() -> {
+				Main.showBufferBar();
+			});
+
+			try {
+				instance.makeRequest(searchQuery);
+			} catch (IOException | InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			initNavBtns();
+
+			// Switching scenes must be done on JavaFX thread.
+			Platform.runLater(new Runnable() {
+				@Override
+				public void run() {
+					// Hide the buffering bar here
+					Main.hideBufferBar();
+				}
+			});
+
+		});
 	}
 
 	public static GridPane loadMovies(boolean connectionOkay) {
@@ -639,7 +691,9 @@ public class BrowserPnl extends VBox {
 		GridPane movieGrid;
 
 		if (moviePnl.getChildren().size() > 2) {
-			moviePnl.getChildren().remove(2);
+			Platform.runLater(() -> {
+				moviePnl.getChildren().remove(2);
+			});
 		}
 
 		movieGrid = new GridPane();
@@ -760,8 +814,8 @@ public class BrowserPnl extends VBox {
 			moviePnl.getChildren().add(movieGrid);
 			return null;
 		}
-		
-		//****************END ERROR CASES *****************
+
+		// ****************END ERROR CASES *****************
 
 		int cnt = 0;
 		float rows = movies.size() / 5f;
@@ -952,16 +1006,22 @@ public class BrowserPnl extends VBox {
 			}
 		}
 
-		moviePnl.getChildren().add(movieGrid);
+		Platform.runLater(() -> {
+			moviePnl.getChildren().add(movieGrid);
+		});
 		return movieGrid;
 	}
 
 	public static void updateMovieGrid(GridPane movieGrid) {
 		System.out.println("Updated grid");
-		
-		if (moviePnl.getChildren().size() > 2) 
-			moviePnl.getChildren().remove(2);
 
-		moviePnl.getChildren().add(movieGrid);
+		if (moviePnl.getChildren().size() > 2)
+			Platform.runLater(() -> {
+				moviePnl.getChildren().remove(2);
+			});
+
+		Platform.runLater(() -> {
+			moviePnl.getChildren().add(movieGrid);
+		});
 	}
 }
