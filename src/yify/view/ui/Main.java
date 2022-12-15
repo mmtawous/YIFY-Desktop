@@ -168,7 +168,7 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 	@Override
 	public void appReopened(AppReopenedEvent e) {
 		System.out.println("Reopened");
-		if (!primaryStage.isFocused()) {
+		if (!primaryStage.isShowing()) {
 			Platform.runLater(new Runnable() {
 				@Override
 				public void run() {

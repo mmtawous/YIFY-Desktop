@@ -71,6 +71,7 @@ import yify.model.moviecatalog.MovieCatalog;
 import yify.model.torrentclient.MovieFile;
 import yify.model.torrentclient.StreamType;
 import yify.model.torrentclient.TorrentClient;
+import yify.view.ui.util.BackgroundWorker;
 
 public class MovieInfoPnl extends GridPane {
 	/** The parts of the known YTS.mx URL split up */
@@ -149,14 +150,17 @@ public class MovieInfoPnl extends GridPane {
 		topContent.setBackground(new Background(new BackgroundFill(gradient, null, null)));
 		topContent.setPadding(new Insets(25, 0, 0, 45));
 		// topContent.setGridLinesVisible(true);
-		
-		while (backgroundImg.getProgress() != 1.0) 
+
+		// Waiting for screenshots to load.
+		while (backgroundImg.getProgress() != 1.0) {
+			System.out.println("Waiting for background");
 			Thread.onSpinWait();
-		
+		}
+
 		ImageView backgroundView = new ImageView(backgroundImg);
 		backgroundView.fitWidthProperty().bind(titlePnl.widthProperty());
 		backgroundView.setFitHeight(580);
-		
+
 		// Image goes down before overlay
 		this.add(backgroundView, 0, 1);
 		this.add(topContent, 0, 1);
@@ -192,7 +196,7 @@ public class MovieInfoPnl extends GridPane {
 		ImageView imageView = new ImageView(ytsLogo);
 		imageView.setFitWidth(127);
 		imageView.setFitHeight(40);
-		
+
 		titlePnl.getChildren().add(imageView);
 
 		ImageView taskViewerIcon = new ImageView(new Image("File:assets/taskManIcon.png"));
@@ -288,10 +292,11 @@ public class MovieInfoPnl extends GridPane {
 		else
 			// Should hopefully never happen.
 			return;
-		//System.out.println(jsonString);
+		// System.out.println(jsonString);
 		System.out.println(uri.toString());
 
-		JsonObject rawPage = new Gson().fromJson(jsonString, JsonObject.class).getAsJsonObject("data").getAsJsonObject("movie");
+		JsonObject rawPage = new Gson().fromJson(jsonString, JsonObject.class).getAsJsonObject("data")
+				.getAsJsonObject("movie");
 		System.out.println("Start parse");
 		parseRawPage(rawPage);
 		System.out.println("End parse");
@@ -331,22 +336,22 @@ public class MovieInfoPnl extends GridPane {
 		if (rawCast == null) {
 			return;
 		}
-		
+
 		for (int i = 0; i < rawCast.size(); i++) {
 			JsonObject currentCast = rawCast.get(i).getAsJsonObject();
 			String name = currentCast.get("name").getAsString();
 			String characterName = currentCast.get("character_name").getAsString();
 
 			JsonElement thumbnailElement = currentCast.get("url_small_image");
-			
+
 			String thumbnail = null;
-			if (thumbnailElement != null) 
+			if (thumbnailElement != null)
 				thumbnail = thumbnailElement.getAsString();
-			
+
 			if (thumbnail == null) {
 				thumbnail = DEFAULT_THUMBNAIL;
 			}
-			
+
 			cast.put(name + ":" + characterName, thumbnail);
 		}
 
@@ -737,16 +742,18 @@ public class MovieInfoPnl extends GridPane {
 			playVidIcon = new ImageView(new Image("file:assets/playBtnIcon.png", true));
 		}
 
-		ImageView[] screenshotsArr = new ImageView[3];
+		// This array holds the images for the popup screenshots. Declared here so that
+		// it can be used with the onMouseClick lambda expression.
+		ImageView[] popupScreenshotsArr = new ImageView[3];
 
-		for (int i = 0; i < 3; i++)
-			screenshotsArr[i] = new ImageView(new Image(screenshotLinks[i].replaceFirst("medium", "large"), true));
+		ImageView[] screenshotsArr = new ImageView[3];
 
 		for (int i = 0; i < screenshotLinks.length; i++) {
 			if (screenshotLinks[i] != null && !"".equals(screenshotLinks[i])) {
 				System.out.println(screenshotLinks[i]);
 				StackPane screenshotPane = new StackPane();
-				ImageView screenshotImg = new ImageView(new Image(screenshotLinks[i], true));
+				screenshotsArr[i] = new ImageView(new Image(screenshotLinks[i], true));
+				ImageView screenshotImg = screenshotsArr[i];
 
 				screenshotPane.getChildren().add(screenshotImg);
 
@@ -796,24 +803,36 @@ public class MovieInfoPnl extends GridPane {
 
 				if (i == 0 && playVidIcon != null) {
 					overlay.setOnMouseClicked(mouseEvent -> {
-						
-						// Disabling controls because of semi-transparent overlay that shows up on hover.
-						webview.getEngine().load(
-								"https://youtube.com/embed/" + ytTrailerCode + "?autoplay=1&fs=0&playsinline=1&controls=0&rel=0");
+
+						// Disabling controls because of semi-transparent overlay that shows up on
+						// hover.
+						webview.getEngine().load("https://youtube.com/embed/" + ytTrailerCode
+								+ "?autoplay=1&fs=0&playsinline=1&controls=0&rel=0");
 						PopupStage webviewStage = new PopupStage(webview, this.getScene());
 						webviewStage.showStage();
 					});
 				} else {
 					final Integer currentIdx = Integer.valueOf(i);
 					overlay.setOnMouseClicked(mouseEvent -> {
-						PopupStage screenshotsStage = new PopupStage(screenshotsArr, currentIdx, this.getScene());
-						screenshotsStage.showStage();
+						new PopupStage(popupScreenshotsArr, currentIdx, getScene()).showStage();
 					});
 				}
 
 				screenshots.getChildren().add(screenshotPane);
 
 			}
+		}
+
+		// Waiting for screenshots to load.
+		while (screenshotsArr[0].getImage().getProgress() != 1.0 || screenshotsArr[1].getImage().getProgress() != 1.0
+				|| screenshotsArr[2].getImage().getProgress() != 1.0) {
+			Thread.onSpinWait();
+		}
+		
+		// We don't need the big screenshots urgently so load them in the background.
+		for (int j = 0; j < screenshotLinks.length; j++) {
+			popupScreenshotsArr[j] = new ImageView(
+					new Image(screenshotLinks[j].replace("medium", "large"), true));
 		}
 
 		GridPane.setHalignment(screenshots, HPos.CENTER);
