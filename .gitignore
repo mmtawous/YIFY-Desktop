@@ -2,6 +2,7 @@
 /mods/
 /resources/
 /docs/
+.classpath
 .checkstyle
 .settings
 *.DS_Store

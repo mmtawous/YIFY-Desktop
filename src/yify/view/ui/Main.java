@@ -62,9 +62,9 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 		mainContent.setContent(browserPnl);
 
 		root.getChildren().addAll(mainContent, bufferBarPnl);
-		
+
 		Dimension size = Toolkit.getDefaultToolkit().getScreenSize();
-		root.setPrefSize(size.getWidth() / 1.1 , size.getHeight() / 1.1);
+		root.setPrefSize(size.getWidth() / 1.1, size.getHeight() / 1.1);
 
 		Scene scene = new Scene(root);
 		scene.setFill(Color.rgb(29, 29, 29, 1f));
@@ -189,15 +189,31 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 	}
 
 	public static void showBufferBar() {
-		bufferBarPnl.setVisible(true);
+		Platform.runLater(new Runnable() {
+			@Override
+			public void run() {
+				// Set the buffering bar to visible here
+				bufferBarPnl.setVisible(true);
+			}
+		});
 	}
 
 	public static void hideBufferBar() {
-		bufferBarPnl.setVisible(false);
+		Platform.runLater(new Runnable() {
+			@Override
+			public void run() {
+				bufferBarPnl.setVisible(false);
+			}
+		});
 	}
 
 	public static void switchSceneContent(Node node) {
-		mainContent.setContent(node);
+		Platform.runLater(new Runnable() {
+			@Override
+			public void run() {
+				mainContent.setContent(node);
+			}
+		});
 	}
 
 	public static Node getBrowserPnl() {

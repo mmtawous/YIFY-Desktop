@@ -601,9 +601,7 @@ public class BrowserPnl extends VBox {
 
 		BackgroundWorker.submit(() -> {
 
-			Platform.runLater(() -> {
-				Main.showBufferBar();
-			});
+			Main.showBufferBar();
 
 			try {
 				if ("« First".equals(btn.getText())) {
@@ -627,14 +625,8 @@ public class BrowserPnl extends VBox {
 				e.printStackTrace();
 			}
 
-			// Switching scenes must be done on JavaFX thread.
-			Platform.runLater(new Runnable() {
-				@Override
-				public void run() {
-					// Hide the buffering bar here
-					Main.hideBufferBar();
-				}
-			});
+			// Hide the buffering bar
+			Main.hideBufferBar();
 
 		});
 
@@ -655,22 +647,19 @@ public class BrowserPnl extends VBox {
 		String genre = genreCombo.getSelectionModel().getSelectedItem();
 		String rating = ratingCombo.getSelectionModel().getSelectedItem();
 		String sortBy = sortByCombo.getSelectionModel().getSelectedItem();
-		// int pageNum = getPageNum();
 
 		SearchQuery searchQuery = SearchQuery.getSearchQuery(searchTerm, quality, genre, rating, sortBy, 1);
 
 		BackgroundWorker.submit(() -> {
-
-			Platform.runLater(() -> {
-				Main.showBufferBar();
-			});
+			
+			Main.showBufferBar();
 
 			try {
 				instance.makeRequest(searchQuery);
 			} catch (IOException | InterruptedException e) {
 				e.printStackTrace();
 			}
-			
+
 			initNavBtns();
 
 			// Switching scenes must be done on JavaFX thread.
@@ -798,7 +787,9 @@ public class BrowserPnl extends VBox {
 
 			noConnectionBox.getChildren().addAll(noConnectionLbl, noConnectionIcon, reloadBtn);
 			movieGrid.add(noConnectionBox, 0, 0);
-			moviePnl.getChildren().add(movieGrid);
+			Platform.runLater(() -> {
+				moviePnl.getChildren().add(movieGrid);
+			});
 			return null;
 		}
 
@@ -811,7 +802,9 @@ public class BrowserPnl extends VBox {
 			noResults.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.25f)));
 			movieGrid.setAlignment(Pos.CENTER);
 			movieGrid.add(noResults, 0, 0);
-			moviePnl.getChildren().add(movieGrid);
+			Platform.runLater(() -> {
+				moviePnl.getChildren().add(movieGrid);
+			});
 			return null;
 		}
 
@@ -974,25 +967,16 @@ public class BrowserPnl extends VBox {
 						BackgroundWorker.submit(new Runnable() {
 							@Override
 							public void run() {
-								Platform.runLater(new Runnable() {
-									@Override
-									public void run() {
-										// Set the buffering bar to visible here
-										Main.showBufferBar();
-									}
-								});
+								Main.showBufferBar();
 
 								MovieInfoPnl infoPnl = new MovieInfoPnl(currentMovie);
 								// Switching scenes must be done on JavaFX thread.
-								Platform.runLater(new Runnable() {
-									@Override
-									public void run() {
-										// Hide the buffering bar here
-										Main.hideBufferBar();
 
-										Main.switchSceneContent(infoPnl);
-									}
-								});
+								// Hide the buffering bar here
+								Main.hideBufferBar();
+
+								Main.switchSceneContent(infoPnl);
+
 							}
 						});
 
