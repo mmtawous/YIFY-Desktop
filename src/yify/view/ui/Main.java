@@ -1,7 +1,9 @@
 package yify.view.ui;
 
 import java.awt.Desktop;
+import java.awt.Dimension;
 import java.awt.Taskbar;
+import java.awt.Toolkit;
 import java.awt.desktop.AppReopenedEvent;
 import java.awt.desktop.AppReopenedListener;
 import java.awt.desktop.QuitEvent;
@@ -60,6 +62,9 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 		mainContent.setContent(browserPnl);
 
 		root.getChildren().addAll(mainContent, bufferBarPnl);
+		
+		Dimension size = Toolkit.getDefaultToolkit().getScreenSize();
+		root.setPrefSize(size.getWidth() / 1.1 , size.getHeight() / 1.1);
 
 		Scene scene = new Scene(root);
 		scene.setFill(Color.rgb(29, 29, 29, 1f));
@@ -68,7 +73,7 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 		primaryStage.setTitle("YIFY-Desktop");
 		primaryStage.setScene(scene);
 
-		if (Desktop.isDesktopSupported()) {
+		if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_QUIT_HANDLER)) {
 			Desktop desktop = Desktop.getDesktop();
 			desktop.setQuitHandler(this);
 			desktop.setQuitStrategy(QuitStrategy.NORMAL_EXIT);

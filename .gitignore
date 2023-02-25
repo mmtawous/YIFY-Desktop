@@ -1,6 +1,7 @@
 /bin/
 /mods/
 /resources/
+/docs/
 .checkstyle
 .settings
 *.DS_Store

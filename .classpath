@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/JavaFX19-arm64">
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/JavaFX19">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/Users/mohamed/Desktop/Mohamed/CS_Personal_Projects/Repos/YIFY-Desktop/lib/torrent-parser.jar">
+	<classpathentry kind="lib" path="C:/Users/mik-2/Desktop/dev_env/projects/YIFY-Desktop/lib/torrent-parser.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/Users/mohamed/Desktop/Mohamed/CS_Personal_Projects/Repos/YIFY-Desktop/lib/controlsfx-11.1.1.jar" sourcepath="docs/ControlsFX/controlsfx-master/controlsfx/src">
+	<classpathentry kind="lib" path="C:/Users/mik-2/Desktop/dev_env/projects/YIFY-Desktop/lib/controlsfx-11.1.1.jar" sourcepath="docs/ControlsFX/controlsfx-master/controlsfx/src">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/Users/mohamed/Desktop/Mohamed/CS_Personal_Projects/Repos/YIFY-Desktop/lib/commons-io-2.11.0.jar" sourcepath="docs/ApacheCommonsIO/commons-io-2.11.0/commons-io-2.11.0-sources.jar">
+	<classpathentry kind="lib" path="C:/Users/mik-2/Desktop/dev_env/projects/YIFY-Desktop/lib/commons-io-2.11.0.jar" sourcepath="docs/ApacheCommonsIO/commons-io-2.11.0/commons-io-2.11.0-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="file:/Users/mohamed/Desktop/Mohamed/CS_Personal_Projects/Repos/YIFY-Desktop/docs/ApacheCommonsIO/commons-io-2.11.0/docs/"/>
 			<attribute name="module" value="true"/>
@@ -27,7 +27,7 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/Users/mohamed/Desktop/Mohamed/CS_Personal_Projects/Repos/YIFY-Desktop/lib/gson-2.9.1.jar" sourcepath="docs/gson-2.9.1-sources.jar">
+	<classpathentry kind="lib" path="C:/Users/mik-2/Desktop/dev_env/projects/YIFY-Desktop/lib/gson-2.9.1.jar" sourcepath="docs/gson-2.9.1-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:file:/Users/mohamed/Desktop/Mohamed/CS_Personal_Projects/Repos/YIFY-Desktop/docs/gson-2.9.1-javadoc.jar!/"/>
 			<attribute name="module" value="true"/>

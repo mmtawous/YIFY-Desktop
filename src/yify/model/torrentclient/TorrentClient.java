@@ -27,15 +27,25 @@ import javafx.collections.ObservableList;
 import yify.view.ui.TaskViewer;
 
 public class TorrentClient {
+	private static enum OS {
+		WIN, MAC
+	};
+
+	private static final OS currentOS = System.getProperty("os.name").toUpperCase().contains("WINDOWS") ? OS.WIN
+			: OS.MAC;
+
 	private static final String TEMP_PATH = Path.of(System.getProperty("java.io.tmpdir"), "YIFY-Desktop").toString();
-	private static final String UNXI_EXEC_NAME = "/bin/zsh";
-	private static final String UNIX_COMMAND_ARG = "-c";
-	private static final String UNIX_ENV_PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
-	private static final String RESOURCES_PATH = "/" + Path.of(System.getProperty("user.dir"), "resources").toString();
-	private static final String NODE_PATH = "/"
-			+ Path.of(RESOURCES_PATH, "node-v16.17.0-darwin-x64", "bin", "node").toString();
-	private static final String WEBTORRENT_PATH = "/"
-			+ Path.of(RESOURCES_PATH, "webtorrent-cli", "bin", "cmd.js").toString();
+
+	private static final String RESOURCES_PATH = Path.of(System.getProperty("user.dir"), "resources").toString();
+	private static final String NODE_PATH = Path.of(RESOURCES_PATH,
+			(currentOS == OS.WIN ? "node-v18.12.1-win-x64" : "TODO"), currentOS == OS.WIN ? "node.exe" : "bin\\node")
+			.toString();
+	private static final String WEBTORRENT_PATH = Path.of(RESOURCES_PATH, "webtorrent-cli", "bin", "cmd.js").toString();
+
+	private static final String EXEC = currentOS == OS.WIN ? "CMD" : "/bin/zsh";
+
+	private static final String EXEC_ARG = currentOS == OS.WIN ? "/C" : "-c";
+
 	private static ArrayList<Process> processList = new ArrayList<Process>();
 
 	public static Process start(StreamType streamType, String torrentName, String downloadPath, Integer selectFileIndex,
@@ -43,8 +53,8 @@ public class TorrentClient {
 
 		System.out.println("Started executing process");
 		List<String> cmd = new ArrayList<String>();
-		cmd.add(UNXI_EXEC_NAME);
-		cmd.add(UNIX_COMMAND_ARG);
+		cmd.add(EXEC);
+		cmd.add(EXEC_ARG);
 
 		String commandStr = NODE_PATH + " " + WEBTORRENT_PATH + " ";
 
@@ -63,7 +73,8 @@ public class TorrentClient {
 		}
 
 		if (downloadPath != null) {
-			// Adding quotes around download path to santize it. (Some file names have spaces so it
+			// Adding quotes around download path to santize it. (Some file names have
+			// spaces so it
 			// causes parse problems with webtorrent).
 			commandStr += "--out " + "\"" + downloadPath + "\"" + " ";
 		} else {
@@ -81,17 +92,13 @@ public class TorrentClient {
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		pb.redirectErrorStream(true);
 		pb.redirectOutput(Redirect.DISCARD);
-		pb.environment().put("PATH", UNIX_ENV_PATH);
 
 		String workingDir;
-		// here, we assign the name of the OS, according to Java, to a variable...
-		String OS = (System.getProperty("os.name")).toUpperCase();
-		// to determine what the workingDirectory is.
-		// if it is some version of Windows
-		if (OS.contains("WIN")) {
+
+		if (currentOS == OS.WIN) {
 			// it is simply the location of the "AppData" folder
 			workingDir = System.getenv("AppData") + "\\YIFY-Desktop\\infoServerUrl.txt";
-		} else if (OS.contains("MAC")) {
+		} else if (currentOS == OS.MAC) {
 			workingDir = System.getProperty("user.home")
 					+ "/Library/Application Support/YIFY-Desktop/infoServerUrl.txt";
 		} else {
@@ -114,7 +121,6 @@ public class TorrentClient {
 		// wait until it is. As soon as the infoServerUrl String is ready it is
 		// submitted
 		// to the TaskViewer using the submitInfoServerUrl() static method.
-		System.out.println("Started thread");
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 
 		System.out.println("Started thread");
@@ -149,7 +155,7 @@ public class TorrentClient {
 
 		return p;
 	}
-	
+
 	public static int getNumRunningTasks() {
 		int cnt = 0;
 
@@ -178,7 +184,31 @@ public class TorrentClient {
 	}
 
 	public static void stop(Process p) {
+		
+		if (p.isAlive()) {
+			System.out.println("It's still alive, before");
+		} else {
+			System.out.println("It's dead now, before");
+		}
+
 		p.destroy();
+		
+		try {
+			p.getInputStream().close();
+			p.getOutputStream().close();
+			p.getErrorStream().close();
+		} catch (IOException e) {
+			// IDK what to do here so just print the exception
+			System.out.println(e.getMessage());
+		}
+
+		if (p.isAlive()) {
+			System.out.println("It's still alive, after");
+		} else {
+			System.out.println("It's dead now, after");
+		}
+		
+		processList.remove(p);
 
 	}
 

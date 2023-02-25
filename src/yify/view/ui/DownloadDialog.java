@@ -285,7 +285,8 @@ public class DownloadDialog {
 		if (!System.getProperty("os.name").startsWith("Windows")) {
 			return System.getProperty("user.home") + "/Downloads/";
 		} else {
-			return System.getProperty("user.home") + "/YIFY-Movies/";
+			// TODO Figure out the weird download path stuff. quotes are annoying
+			return System.getProperty("user.home") + "\\Downloads";
 		}
 	}
 
