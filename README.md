@@ -32,6 +32,9 @@ The latest build is available for [download here](https://github.com/mmtawous/YI
 3. Searching by YTS.mx featured movies
 4. Support for Windows devices!
 
+## Contribute
+Contributions to this project are welcome! If you find a bug or would like to see a new feature please submit an issue!
+
 ## License
 Licensed under GNU General Public License v3.0 | Copyright (c) Mohamed Tawous
 
