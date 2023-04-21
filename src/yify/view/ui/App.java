@@ -28,12 +28,13 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import yify.model.moviecatalog.MovieCatalog;
+import yify.model.api.yts.ConnectionThread;
+import yify.model.api.yts.YTS_API;
 import yify.model.torrentclient.TorrentClient;
 
-public class Main extends Application implements QuitHandler, AppReopenedListener {
+public class App extends Application implements QuitHandler, AppReopenedListener {
 	private static Stage primaryStage;
-	private static MovieCatalog instance;
+	private static YTS_API instance;
 	private static ScrollPane mainContent;
 	private static StackPane root;
 	private static BrowserPnl browserPnl;
@@ -41,12 +42,12 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 
 	@Override
 	public void start(Stage primaryStage) {
-		Main.primaryStage = primaryStage;
+		App.primaryStage = primaryStage;
 		Platform.setImplicitExit(false);
 
 		// Constructing the MovieCatalog early will ensure the connection is checked
 		// early on
-		instance = MovieCatalog.instance();
+		instance = YTS_API.instance();
 		browserPnl = new BrowserPnl();
 		bufferBarPnl = new BufferBarPnl();
 		bufferBarPnl.setVisible(false);
@@ -64,12 +65,12 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 		root.getChildren().addAll(mainContent, bufferBarPnl);
 
 		Dimension size = Toolkit.getDefaultToolkit().getScreenSize();
-		root.setPrefSize(size.getWidth() / 1.1, size.getHeight() / 1.1);
+		root.setPrefSize(size.getWidth() / 1.1, size.getHeight() / 1.1); // Take up most of but not the whole screen
 
 		Scene scene = new Scene(root);
-		scene.setFill(Color.rgb(29, 29, 29, 1f));
+		scene.setFill(Color.rgb(29, 29, 29, 1f)); // The plain background is grey
 
-		scene.getStylesheets().addAll("File:CSS/style.css", "File:CSS/transparentStage.css");
+		scene.getStylesheets().addAll("File:CSS/style.css", "File:CSS/transparentStage.css"); // Loading in the css
 		primaryStage.setTitle("YIFY-Desktop");
 		primaryStage.setScene(scene);
 
@@ -86,7 +87,7 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 			if (TorrentClient.getNumRunningTasks() == 0) {
 				TorrentClient.quit();
 				if (instance != null)
-					instance.connectionThread.kill();
+					ConnectionThread.kill();
 				Platform.exit();
 				System.exit(0);
 			}
@@ -148,7 +149,7 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 							Platform.exit();
 							TorrentClient.quit();
 							if (instance != null)
-								instance.connectionThread.kill();
+								ConnectionThread.kill();
 							response.performQuit();
 
 						} else {
@@ -161,7 +162,7 @@ public class Main extends Application implements QuitHandler, AppReopenedListene
 					System.out.println("exited");
 					TorrentClient.quit();
 					if (instance != null)
-						instance.connectionThread.kill();
+						ConnectionThread.kill();
 					Platform.exit();
 					response.performQuit();
 				}

@@ -1,11 +1,10 @@
-package yify.model.moviecatalog;
+package yify.model.api.yts;
 
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
-
 
 /**
  * A thread that checks the connection between the client and the server at the
@@ -16,11 +15,21 @@ import java.util.TimerTask;
  */
 public class ConnectionThread implements ConnectionValidator {
 	public static final String PROBE_URL = "https://yts.mx";
-	private Timer timer;
+	/* A boolean denoting the current status of the client-server connection */
+	private static boolean connectionOkay = true;
+	private static Timer timer;
 
 	public ConnectionThread(int seconds) {
 		timer = new Timer();
 		timer.scheduleAtFixedRate(new CheckConnectionTask(), 0, seconds * 1000);
+	}
+	
+	public static void setConnectionOkay(boolean connectionOkayPar) {
+		connectionOkay = connectionOkayPar;
+	}
+
+	public static boolean getConnectionStatus() {
+		return connectionOkay;
 	}
 
 	/**
@@ -36,20 +45,17 @@ public class ConnectionThread implements ConnectionValidator {
 		try {
 			URL url = new URL(serverUrl);
 			HttpURLConnection http = (HttpURLConnection) url.openConnection();
-			http.setConnectTimeout(10000);
+			http.setConnectTimeout(10000); // Set timeout to be 10 seconds
 			statusCode = http.getResponseCode();
 		} catch (Exception e) {
-			System.out.println(statusCode);
-			e.printStackTrace();
-			throw new ConnectException("Unable to connect to the YTS.MX!");
+			System.out.println("Exception thrown. Status=" + statusCode);
+			if (statusCode != 200)
+				throw new ConnectException("Unable to connect to the YTS.MX!");
 		}
-		if (statusCode != 200)
-			throw new ConnectException("Unable to connect to the YTS.MX!");
-		else
-			MovieCatalog.setConnectionOkay(true);
+
 	}
 
-	public void kill() {
+	public static void kill() {
 		timer.cancel();
 	}
 
@@ -58,7 +64,7 @@ public class ConnectionThread implements ConnectionValidator {
 			try {
 				checkConnection(PROBE_URL);
 			} catch (ConnectException e) {
-				MovieCatalog.setConnectionOkay(false);
+				ConnectionThread.setConnectionOkay(false);
 			}
 
 		}

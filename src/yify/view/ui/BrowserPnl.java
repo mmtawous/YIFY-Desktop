@@ -10,6 +10,7 @@ import javafx.collections.FXCollections;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -37,16 +38,18 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
+import yify.model.api.yts.ConnectionThread;
+import yify.model.api.yts.YTS_API;
+import yify.model.api.yts.searchquery.Genre;
+import yify.model.api.yts.searchquery.Quality;
+import yify.model.api.yts.searchquery.SearchQuery;
+import yify.model.api.yts.searchquery.SortBy;
 import yify.model.movie.Movie;
-import yify.model.moviecatalog.MovieCatalog;
-import yify.model.moviecatalog.searchquery.Genre;
-import yify.model.moviecatalog.searchquery.Quality;
-import yify.model.moviecatalog.searchquery.SearchQuery;
-import yify.model.moviecatalog.searchquery.SortBy;
 import yify.view.ui.util.BackgroundWorker;
+import yify.view.ui.util.Fonts;
 
 public class BrowserPnl extends VBox {
-	private static MovieCatalog instance;
+	private static YTS_API instance;
 	private HBox titlePnl;
 	private GridPane searchPnl;
 	private static VBox moviePnl;
@@ -58,25 +61,15 @@ public class BrowserPnl extends VBox {
 	private ComboBox<String> sortByCombo;
 	private Label moviePnlTitle;
 	private static HBox navBtnsBox;
-	private static final Font ARIAL_REG16 = new Font("Arial Regular", 16);
-	private static final Font ARIMO_BOLD14 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 14);
-	private static final Font ARIMO_BOLD12 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 12);
-	private static final Font ARIMO_BOLD22 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 22);
-	private static final Font ARIMO_REG22 = Font.loadFont("File:assets/fonts/arimo/Arimo-Regular.ttf", 22);
-	private static final Font ARIMO_REG12 = Font.loadFont("File:assets/fonts/arimo/Arimo-Regular.ttf", 12);
 
 	public BrowserPnl() {
-		this.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
 
-//		ColumnConstraints column = new ColumnConstraints();
-//		column.setPercentWidth(100);
-//		this.getColumnConstraints().add(column);
+		this.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
 
 		/********************* Initialize titlePnl START ********************/
 		titlePnl = new HBox(950);
 		titlePnl.setAlignment(Pos.CENTER_LEFT);
 		titlePnl.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
-//		titlePnl.setPrefSize(1200, 60);
 		titlePnl.setPadding(new Insets(10, 65, 10, 65));
 
 		Image ytsLogo = new Image("File:assets/logo-YTS.png");
@@ -95,39 +88,13 @@ public class BrowserPnl extends VBox {
 		taskViewerBtn.setTooltip(new Tooltip("View running tasks"));
 
 		taskViewerBtn.setOnMouseEntered(moueseEvent -> {
-			final Animation animation = new Transition() {
-
-				{
-					setCycleDuration(Duration.millis(180));
-					setInterpolator(Interpolator.EASE_IN);
-				}
-
-				@Override
-				protected void interpolate(double frac) {
-					taskViewerBtn.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * frac)));
-
-				}
-
-			};
+			final Animation animation = getFadeTransition(taskViewerBtn, 180, Interpolator.EASE_IN, true);
 			animation.play();
 
 		});
 
 		taskViewerBtn.setOnMouseExited(moueseEvent -> {
-			final Animation animation = new Transition() {
-
-				{
-					setCycleDuration(Duration.millis(180));
-					setInterpolator(Interpolator.EASE_IN);
-				}
-
-				@Override
-				protected void interpolate(double frac) {
-					taskViewerBtn.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * (1 - frac))));
-
-				}
-
-			};
+			final Animation animation = getFadeTransition(taskViewerBtn, 180, Interpolator.EASE_IN, false);
 			animation.play();
 
 		});
@@ -165,7 +132,7 @@ public class BrowserPnl extends VBox {
 		moviePnl.setAlignment(Pos.TOP_CENTER);
 
 		moviePnlTitle = new Label("YIFY Movies");
-		moviePnlTitle.setFont(ARIMO_REG22);
+		moviePnlTitle.setFont(Fonts.ARIMO_REG22);
 		moviePnlTitle.setTextFill(Color.rgb(106, 192, 69, 1f));
 		moviePnlTitle.setPadding(new Insets(10, 0, 0, 0));
 		moviePnl.getChildren().add(moviePnlTitle);
@@ -178,7 +145,7 @@ public class BrowserPnl extends VBox {
 
 		/*********************** Initialize MovieCatalog instance START *****/
 		try {
-			instance = MovieCatalog.instance();
+			instance = YTS_API.instance();
 			instance.makeRequest(SearchQuery.getDefaultSearchQuery());
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
@@ -188,9 +155,29 @@ public class BrowserPnl extends VBox {
 
 	}
 
+	private Transition getFadeTransition(Node target, int cycleDuration, Interpolator interpolator, boolean fadeUp) {
+		return new Transition() {
+
+			{
+				setCycleDuration(Duration.millis(cycleDuration));
+				setInterpolator(interpolator);
+			}
+
+			@Override
+			protected void interpolate(double frac) {
+				if (fadeUp)
+					target.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * frac)));
+				else
+					target.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * (1 - frac))));
+
+			}
+
+		};
+	}
+
 	private void initSearchBox() {
 		Text searchTerm = new Text("Search Term: \n");
-		searchTerm.setFont(ARIMO_BOLD22);
+		searchTerm.setFont(Fonts.ARIMO_BOLD22);
 		searchTerm.setFill(Color.rgb(90, 90, 90));
 		searchTerm.setLineSpacing(-10);
 
@@ -199,7 +186,7 @@ public class BrowserPnl extends VBox {
 		searchTermTxt = new TextField();
 		searchTermTxt.setBackground(new Background(
 				new BackgroundFill(Color.rgb(40, 40, 40, 1f), new CornerRadii(3), new Insets(0, 25, 0, 0))));
-		searchTermTxt.setFont(ARIAL_REG16);
+		searchTermTxt.setFont(Fonts.ARIAL_REG16);
 		searchTermTxt.setStyle("-fx-text-inner-color: #a2a2a2;");
 		searchTermTxt.setPrefSize(880, 40);
 		searchTermTxt.setMaxSize(880, 40);
@@ -219,7 +206,7 @@ public class BrowserPnl extends VBox {
 		qualityBox.setPadding(new Insets(20, 20, 0, 0));
 
 		Text quality = new Text("Quality: ");
-		quality.setFont(ARIMO_BOLD14);
+		quality.setFont(Fonts.ARIMO_BOLD14);
 		quality.setFill(Color.rgb(90, 90, 90));
 		qualityBox.getChildren().add(quality);
 
@@ -238,7 +225,7 @@ public class BrowserPnl extends VBox {
 		genreBox.setPadding(new Insets(20, 20, 0, 0));
 
 		Text genre = new Text("Genre: ");
-		genre.setFont(ARIMO_BOLD14);
+		genre.setFont(Fonts.ARIMO_BOLD14);
 		genre.setFill(Color.rgb(90, 90, 90));
 		genreBox.getChildren().add(genre);
 
@@ -258,7 +245,7 @@ public class BrowserPnl extends VBox {
 		ratingBox.setPadding(new Insets(20, 20, 0, 0));
 
 		Text rating = new Text("Rating: ");
-		rating.setFont(ARIMO_BOLD14);
+		rating.setFont(Fonts.ARIMO_BOLD14);
 		rating.setFill(Color.rgb(90, 90, 90));
 		ratingBox.getChildren().add(rating);
 
@@ -284,7 +271,7 @@ public class BrowserPnl extends VBox {
 		sortByBox.setPadding(new Insets(20, 20, 0, 0));
 
 		Text sortBy = new Text("Sort By: ");
-		sortBy.setFont(ARIMO_BOLD14);
+		sortBy.setFont(Fonts.ARIMO_BOLD14);
 		sortBy.setFill(Color.rgb(90, 90, 90));
 		sortByBox.getChildren().add(sortBy);
 
@@ -385,7 +372,7 @@ public class BrowserPnl extends VBox {
 		navBtnsBox.setPadding(new Insets(0, 0, 20, 0));
 		navBtnsBox.setAlignment(Pos.TOP_CENTER);
 
-		if (!MovieCatalog.instance().getConnectionStatus()) {
+		if (!ConnectionThread.getConnectionStatus()) {
 			System.out.println("Returned because bad connection");
 			return;
 		}
@@ -410,7 +397,7 @@ public class BrowserPnl extends VBox {
 			if (getPageNum() >= 3) {
 				Button navFirst = new Button("« First");
 				navFirst.setBackground(defaultCol);
-				navFirst.setFont(ARIMO_BOLD14);
+				navFirst.setFont(Fonts.ARIMO_BOLD14);
 				navFirst.setTextFill(Color.WHITE);
 				navFirst.setBorder(new Border(new BorderStroke(Color.rgb(51, 51, 51), BorderStrokeStyle.SOLID,
 						new CornerRadii(3), new BorderWidths(1))));
@@ -437,7 +424,7 @@ public class BrowserPnl extends VBox {
 			if (getPageNum() > 1) {
 				Button navPrevious = new Button("« Previous");
 				navPrevious.setBackground(defaultCol);
-				navPrevious.setFont(ARIMO_BOLD14);
+				navPrevious.setFont(Fonts.ARIMO_BOLD14);
 				navPrevious.setTextFill(Color.WHITE);
 				navPrevious.setBorder(new Border(new BorderStroke(Color.rgb(51, 51, 51), BorderStrokeStyle.SOLID,
 						new CornerRadii(3), new BorderWidths(1))));
@@ -476,7 +463,7 @@ public class BrowserPnl extends VBox {
 
 			for (int i = startNum; i < numButtons.length + startNum; i++) {
 				numButtons[i - startNum] = new Button(Integer.toString(i + 1));
-				numButtons[i - startNum].setFont(ARIMO_BOLD14);
+				numButtons[i - startNum].setFont(Fonts.ARIMO_BOLD14);
 				numButtons[i - startNum].setTextFill(Color.WHITE);
 				numButtons[i - startNum].setBorder(new Border(new BorderStroke(Color.rgb(51, 51, 51),
 						BorderStrokeStyle.SOLID, new CornerRadii(3), new BorderWidths(1))));
@@ -513,7 +500,7 @@ public class BrowserPnl extends VBox {
 				Button moreAhead = new Button("...");
 				moreAhead
 						.setBackground(new Background(new BackgroundFill(Color.TRANSPARENT, new CornerRadii(3), null)));
-				moreAhead.setFont(ARIMO_BOLD14);
+				moreAhead.setFont(Fonts.ARIMO_BOLD14);
 				moreAhead.setTextFill(Color.WHITE);
 				moreAhead.setBorder(new Border(new BorderStroke(Color.rgb(51, 51, 51), BorderStrokeStyle.SOLID,
 						new CornerRadii(3), new BorderWidths(1))));
@@ -528,7 +515,7 @@ public class BrowserPnl extends VBox {
 			if (getPageNum() != numPages) {
 				Button next = new Button("Next »");
 				next.setBackground(new Background(new BackgroundFill(Color.TRANSPARENT, new CornerRadii(3), null)));
-				next.setFont(ARIMO_BOLD14);
+				next.setFont(Fonts.ARIMO_BOLD14);
 				next.setTextFill(Color.WHITE);
 				next.setBorder(new Border(new BorderStroke(Color.rgb(51, 51, 51), BorderStrokeStyle.SOLID,
 						new CornerRadii(3), new BorderWidths(1))));
@@ -596,12 +583,12 @@ public class BrowserPnl extends VBox {
 	private static void fireNavButton(Button btn) {
 
 		if (instance == null) {
-			instance = MovieCatalog.instance();
+			instance = YTS_API.instance();
 		}
 
 		BackgroundWorker.submit(() -> {
 
-			Main.showBufferBar();
+			App.showBufferBar();
 
 			try {
 				if ("« First".equals(btn.getText())) {
@@ -626,7 +613,7 @@ public class BrowserPnl extends VBox {
 			}
 
 			// Hide the buffering bar
-			Main.hideBufferBar();
+			App.hideBufferBar();
 
 		});
 
@@ -651,8 +638,8 @@ public class BrowserPnl extends VBox {
 		SearchQuery searchQuery = SearchQuery.getSearchQuery(searchTerm, quality, genre, rating, sortBy, 1);
 
 		BackgroundWorker.submit(() -> {
-			
-			Main.showBufferBar();
+
+			App.showBufferBar();
 
 			try {
 				instance.makeRequest(searchQuery);
@@ -667,7 +654,7 @@ public class BrowserPnl extends VBox {
 				@Override
 				public void run() {
 					// Hide the buffering bar here
-					Main.hideBufferBar();
+					App.hideBufferBar();
 				}
 			});
 
@@ -693,103 +680,7 @@ public class BrowserPnl extends VBox {
 		movieGrid.setPadding(new Insets(0, 0, 20, 0));
 
 		if (!connectionOkay) {
-			VBox noConnectionBox = new VBox(10);
-			noConnectionBox.setAlignment(Pos.TOP_CENTER);
-			noConnectionBox.setMinHeight(280);
-
-			System.out.println("connection was not okay and displayed!");
-
-			// If displaying no connection page then don't show any nav btns
-			if (moviePnl.getChildren().size() >= 2) {
-				HBox navBtnsBox = (HBox) moviePnl.getChildren().get(1);
-				navBtnsBox.getChildren().clear();
-			}
-
-			Label noConnectionLbl = new Label("Unable to establish a connection to YTS.mx. "
-					+ "Please check your network connection and try again!");
-			noConnectionLbl.setPrefWidth(600);
-			noConnectionLbl.setWrapText(true);
-			noConnectionLbl.setTextAlignment(TextAlignment.CENTER);
-			noConnectionLbl.setFont(ARIMO_BOLD22);
-			noConnectionLbl.setTextFill(Color.WHITE);
-			noConnectionLbl.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.25f)));
-
-			ImageView noConnectionIcon = new ImageView(new Image("file:assets/noConnection1.png"));
-			GridPane.setHalignment(noConnectionIcon, HPos.CENTER);
-
-			Font arimoBold16 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 16);
-			Background defaultCol = new Background(
-					new BackgroundFill(Color.rgb(106, 192, 69, 1f), new CornerRadii(3), null));
-
-			Button reloadBtn = new Button("Reload");
-			reloadBtn.setBackground(defaultCol);
-			reloadBtn.setFont(arimoBold16);
-			reloadBtn.setTextFill(Color.WHITE);
-			reloadBtn.setPrefSize(100, 40);
-
-			reloadBtn.setOnMouseEntered(mouseEvent -> {
-				final Animation animation = new Transition() {
-
-					{
-						setCycleDuration(Duration.millis(300));
-						setInterpolator(Interpolator.EASE_BOTH);
-					}
-
-					@Override
-					protected void interpolate(double frac) {
-						double rVariable = (106 - 93) * frac;
-						int r = (int) Math.ceil(106 - rVariable);
-						double gVariable = (192 - 169) * frac;
-						int g = (int) Math.ceil(192 - gVariable);
-						double bVariable = (69 - 60) * frac;
-						int b = (int) Math.ceil(69 - bVariable);
-
-						Color vColor = Color.rgb(r, g, b);
-						reloadBtn.setBackground(new Background(new BackgroundFill(vColor, new CornerRadii(3), null)));
-					}
-				};
-				animation.play();
-			});
-
-			reloadBtn.setOnMouseExited(mouseEvent -> {
-				final Animation animation = new Transition() {
-
-					{
-						setCycleDuration(Duration.millis(300));
-						setInterpolator(Interpolator.EASE_BOTH);
-					}
-
-					@Override
-					protected void interpolate(double frac) {
-						double rVariable = (106 - 93) * frac;
-						int r = (int) Math.ceil(93 + rVariable);
-						double gVariable = (192 - 169) * frac;
-						int g = (int) Math.ceil(169 + gVariable);
-						double bVariable = (69 - 60) * frac;
-						int b = (int) Math.ceil(60 + bVariable);
-						Color vColor = Color.rgb(r, g, b);
-						reloadBtn.setBackground(new Background(new BackgroundFill(vColor, new CornerRadii(3), null)));
-					}
-				};
-				animation.play();
-			});
-
-			reloadBtn.setOnAction(buttonEvent -> {
-				if (instance.getConnectionStatus()) {
-					try {
-						instance.makeRequest(SearchQuery.getDefaultSearchQuery());
-					} catch (IOException | InterruptedException e) {
-						e.printStackTrace();
-					}
-					initNavBtns();
-				}
-			});
-
-			noConnectionBox.getChildren().addAll(noConnectionLbl, noConnectionIcon, reloadBtn);
-			movieGrid.add(noConnectionBox, 0, 0);
-			Platform.runLater(() -> {
-				moviePnl.getChildren().add(movieGrid);
-			});
+			displayBadConnection(movieGrid);
 			return null;
 		}
 
@@ -797,7 +688,7 @@ public class BrowserPnl extends VBox {
 
 		if (movies.isEmpty()) {
 			Label noResults = new Label("Your search query yeilded no results");
-			noResults.setFont(ARIMO_BOLD22);
+			noResults.setFont(Fonts.ARIMO_BOLD22);
 			noResults.setTextFill(Color.WHITE);
 			noResults.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.25f)));
 			movieGrid.setAlignment(Pos.CENTER);
@@ -861,7 +752,7 @@ public class BrowserPnl extends VBox {
 				if (ratingStr != 0) {
 
 					Label rating = new Label(currentMovie.getRating() + " / 10");
-					rating.setFont(ARIMO_BOLD22);
+					rating.setFont(Fonts.ARIMO_BOLD22);
 					rating.setTextFill(Color.WHITE);
 					rating.setPadding(new Insets(0, 0, 20, 0));
 					ratingGenreBox.getChildren().add(rating);
@@ -871,7 +762,7 @@ public class BrowserPnl extends VBox {
 				if (genresArr != null) {
 					// Label 1 for genre
 					Label genre1 = new Label(genresArr[0]);
-					genre1.setFont(ARIMO_BOLD22);
+					genre1.setFont(Fonts.ARIMO_BOLD22);
 					genre1.setTextFill(Color.WHITE);
 					ratingGenreBox.getChildren().add(genre1);
 
@@ -879,7 +770,7 @@ public class BrowserPnl extends VBox {
 					if (genresArr.length > 1) {
 						// Label 2 for genre
 						Label genre2 = new Label(genresArr[1]);
-						genre2.setFont(ARIMO_BOLD22);
+						genre2.setFont(Fonts.ARIMO_BOLD22);
 						genre2.setTextFill(Color.WHITE);
 						ratingGenreBox.getChildren().add(genre2);
 					}
@@ -942,24 +833,24 @@ public class BrowserPnl extends VBox {
 
 				if (!"en".equals(currentMovie.getLang())) {
 					Text movieLangText = new Text("[" + currentMovie.getLang().toUpperCase() + "]");
-					movieLangText.setFont(ARIMO_BOLD12);
+					movieLangText.setFont(Fonts.ARIMO_BOLD12);
 					movieLangText.setFill(Color.rgb(172, 215, 222));
 					movieTitleContainer.getChildren().add(movieLangText);
 				}
 
 				Label movieTitle = new Label(currentMovie.getTitle());
-				movieTitle.setFont(ARIMO_BOLD14);
+				movieTitle.setFont(Fonts.ARIMO_BOLD14);
 				movieTitle.setTextFill(Color.WHITE);
 				movieTitleContainer.getChildren().add(movieTitle);
 
 				Label movieYear = new Label(Integer.toString(currentMovie.getYear()));
-				movieYear.setFont(ARIMO_REG12);
+				movieYear.setFont(Fonts.ARIMO_REG12);
 				movieYear.setTextFill(Color.rgb(145, 145, 145));
 
 				movieBox.getChildren().addAll(imageContainer, movieTitleContainer, movieYear);
 
 				movieBox.setOnMouseClicked(mouseEvent -> {
-					if (instance.getConnectionStatus()) {
+					if (ConnectionThread.getConnectionStatus()) {
 
 						// Initializing the MovieInfoPnl in a background thread to prevent GUI from
 						// hanging on click. The MovieInfoPnl constructor makes an HTTPClient call which
@@ -967,21 +858,20 @@ public class BrowserPnl extends VBox {
 						BackgroundWorker.submit(new Runnable() {
 							@Override
 							public void run() {
-								Main.showBufferBar();
+								App.showBufferBar();
 
 								MovieInfoPnl infoPnl = new MovieInfoPnl(currentMovie);
-								// Switching scenes must be done on JavaFX thread.
+
+								App.switchSceneContent(infoPnl);
 
 								// Hide the buffering bar here
-								Main.hideBufferBar();
-
-								Main.switchSceneContent(infoPnl);
+								App.hideBufferBar();
 
 							}
 						});
 
 					} else
-						loadMovies(instance.getConnectionStatus());
+						loadMovies(ConnectionThread.getConnectionStatus());
 				});
 
 				movieGrid.add(movieBox, j, (int) i);
@@ -994,6 +884,111 @@ public class BrowserPnl extends VBox {
 			moviePnl.getChildren().add(movieGrid);
 		});
 		return movieGrid;
+	}
+
+	private static void displayBadConnection(GridPane movieGrid) {
+		VBox noConnectionBox = new VBox(10);
+		noConnectionBox.setAlignment(Pos.TOP_CENTER);
+		noConnectionBox.setMinHeight(280);
+
+		System.out.println("connection was not okay and displayed!");
+
+		// If displaying no connection page then don't show any nav btns
+		if (moviePnl.getChildren().size() >= 2) {
+			HBox navBtnsBox = (HBox) moviePnl.getChildren().get(1);
+			Platform.runLater(() -> {
+				navBtnsBox.getChildren().clear();
+			});
+		}
+
+		Label noConnectionLbl = new Label(
+				"Unable to establish a connection to YTS.mx. " + "Please check your network connection and try again!");
+		noConnectionLbl.setPrefWidth(600);
+		noConnectionLbl.setWrapText(true);
+		noConnectionLbl.setTextAlignment(TextAlignment.CENTER);
+		noConnectionLbl.setFont(Fonts.ARIMO_BOLD22);
+		noConnectionLbl.setTextFill(Color.WHITE);
+		noConnectionLbl.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.25f)));
+
+		ImageView noConnectionIcon = new ImageView(new Image("file:assets/noConnection1.png"));
+		GridPane.setHalignment(noConnectionIcon, HPos.CENTER);
+
+		Font arimoBold16 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 16);
+		Background defaultCol = new Background(
+				new BackgroundFill(Color.rgb(106, 192, 69, 1f), new CornerRadii(3), null));
+
+		Button reloadBtn = new Button("Reload");
+		reloadBtn.setBackground(defaultCol);
+		reloadBtn.setFont(arimoBold16);
+		reloadBtn.setTextFill(Color.WHITE);
+		reloadBtn.setPrefSize(100, 40);
+
+		reloadBtn.setOnMouseEntered(mouseEvent -> {
+			final Animation animation = new Transition() {
+
+				{
+					setCycleDuration(Duration.millis(300));
+					setInterpolator(Interpolator.EASE_BOTH);
+				}
+
+				@Override
+				protected void interpolate(double frac) {
+					double rVariable = (106 - 93) * frac;
+					int r = (int) Math.ceil(106 - rVariable);
+					double gVariable = (192 - 169) * frac;
+					int g = (int) Math.ceil(192 - gVariable);
+					double bVariable = (69 - 60) * frac;
+					int b = (int) Math.ceil(69 - bVariable);
+
+					Color vColor = Color.rgb(r, g, b);
+					reloadBtn.setBackground(new Background(new BackgroundFill(vColor, new CornerRadii(3), null)));
+				}
+			};
+			animation.play();
+		});
+
+		reloadBtn.setOnMouseExited(mouseEvent -> {
+			final Animation animation = new Transition() {
+
+				{
+					setCycleDuration(Duration.millis(300));
+					setInterpolator(Interpolator.EASE_BOTH);
+				}
+
+				@Override
+				protected void interpolate(double frac) {
+					double rVariable = (106 - 93) * frac;
+					int r = (int) Math.ceil(93 + rVariable);
+					double gVariable = (192 - 169) * frac;
+					int g = (int) Math.ceil(169 + gVariable);
+					double bVariable = (69 - 60) * frac;
+					int b = (int) Math.ceil(60 + bVariable);
+					Color vColor = Color.rgb(r, g, b);
+					reloadBtn.setBackground(new Background(new BackgroundFill(vColor, new CornerRadii(3), null)));
+				}
+			};
+			animation.play();
+		});
+
+		reloadBtn.setOnAction(buttonEvent -> {
+
+			try {
+				instance.makeRequest(SearchQuery.getDefaultSearchQuery());
+			} catch (IOException | InterruptedException e) {
+				e.printStackTrace();
+			}
+
+			if (ConnectionThread.getConnectionStatus()) {
+				initNavBtns();
+			}
+
+		});
+
+		noConnectionBox.getChildren().addAll(noConnectionLbl, noConnectionIcon, reloadBtn);
+		movieGrid.add(noConnectionBox, 0, 0);
+		Platform.runLater(() -> {
+			moviePnl.getChildren().add(movieGrid);
+		});
 	}
 
 	public static void updateMovieGrid(GridPane movieGrid) {

@@ -1,15 +1,8 @@
 package yify.view.ui;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -55,41 +48,22 @@ import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
 import javafx.scene.web.WebView;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
+import yify.model.api.yts.YTS_API;
 import yify.model.movie.Movie;
 import yify.model.movie.Torrent;
-import yify.model.moviecatalog.MovieCatalog;
 import yify.model.torrentclient.MovieFile;
 import yify.model.torrentclient.StreamType;
 import yify.model.torrentclient.TorrentClient;
+import yify.view.ui.util.Fonts;
 
 public class MovieInfoPnl extends GridPane {
-	/** The parts of the known YTS.mx URL split up */
-	public static final String SCHEME = "https";
-	public static final String HOST = "yts.torrentbay.to";
-	public static final String PATH = "/api/v2/movie_details.json/";
-	/** A constant for the id parameter as per the YTS.mx API */
-	public static final String ID_PARAM = "movie_id=";
-	/** A constant for the with_cast parameter as per the YTS.mx API */
-	public static final String WITH_CAST_PARAM = "with_cast=";
-	/** A constant for the with_images parameter as per the YTS.mx API */
-	public static final String WITH_IMAGES_PARAM = "with_images=";
-	private static final String DEFAULT_THUMBNAIL = "https://img.yts.mx/assets/images/actors/thumb/default_avatar.jpg";
-	private static final Font ARIMO_BOLD40 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 40);
-	private static final Font ARIMO_BOLD20 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 20);
-	private static final Font ARIMO_BOLD18 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 18);
-	private static final Font ARIMO_BOLD14 = Font.loadFont("File:assets/fonts/arimo/Arimo-Bold.ttf", 14);
-	private static final Font ARIMO_ITALIC18 = Font.loadFont("File:assets/fonts/arimo/Arimo-Italic.ttf", 20);
-	private static final Font ARIMO_REG14 = Font.loadFont("File:assets/fonts/arimo/Arimo-Regular.ttf", 14);
-	private static final Font ARIMO_REG13 = Font.loadFont("File:assets/fonts/arimo/Arimo-Regular.ttf", 13);
-	private static final Font ARIMO_REG16 = Font.loadFont("File:assets/fonts/arimo/Arimo-Regular.ttf", 16);
-
+	
 	private Image backgroundImg;
 	private String plotSummary;
 	private Torrent[] torrents;
@@ -105,6 +79,8 @@ public class MovieInfoPnl extends GridPane {
 	private GridPane topContent;
 	private GridPane bottomContent;
 	private WebView webview;
+	
+	private static final String DEFAULT_THUMBNAIL = "https://img.yts.mx/assets/images/actors/thumb/default_avatar.jpg";
 
 	public MovieInfoPnl(@SuppressWarnings("exports") Movie movie) {
 		// Webview construction must be done on JavaFX thread.
@@ -117,7 +93,12 @@ public class MovieInfoPnl extends GridPane {
 
 		try {
 			System.out.println("Start movieDetails");
-			getMovieDetails(movie);
+			JsonObject rawPage = YTS_API.instance().getMovieDetails(movie);
+			
+			if (rawPage != null) {
+				parseRawPage(rawPage);
+			}
+			
 			System.out.println("End movieDetails");
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
@@ -145,14 +126,19 @@ public class MovieInfoPnl extends GridPane {
 
 		topContent.setBackground(new Background(new BackgroundFill(gradient, null, null)));
 		topContent.setPadding(new Insets(25, 0, 0, 45));
-		// topContent.setGridLinesVisible(true);
 
-		// Waiting for screenshots to load.
+		// Waiting for background to load. Sometimes the background never loads so this
+		// loop
+		// goes on forever. To fix this I am adding a timeout so that if it doesn't load
+		// within
+		// two seconds then we break out of the loop.
+		long start = System.currentTimeMillis();
 		while (backgroundImg.getProgress() != 1.0) {
-			System.out.println("Waiting for background");
-			Thread.onSpinWait();
+			if (System.currentTimeMillis() - start > 2000) {
+				System.out.println("Background loading time out.");
+				break;
+			}
 		}
-
 		ImageView backgroundView = new ImageView(backgroundImg);
 		backgroundView.fitWidthProperty().bind(titlePnl.widthProperty());
 		backgroundView.setFitHeight(580);
@@ -251,52 +237,7 @@ public class MovieInfoPnl extends GridPane {
 
 	}
 
-	private void getMovieDetails(Movie movie) throws IOException, InterruptedException {
-		HttpClient client = MovieCatalog.getClient();
-
-		String queryString = ID_PARAM + movie.getId() + "&" + WITH_IMAGES_PARAM + true + "&" + WITH_CAST_PARAM + true;
-
-		URI uri = null;
-		try {
-			uri = new URI(SCHEME, HOST, PATH, queryString, null);
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
-		}
-
-		HttpResponse<String> response = null;
-
-		try {
-			// Create a request
-			HttpRequest request = HttpRequest.newBuilder(uri).timeout(java.time.Duration.ofSeconds(10)).build();
-
-			// Use the client to send the request
-			response = client.send(request, BodyHandlers.ofString());
-		} catch (Exception e) {
-			// Any exceptions that occur here are most likely network exceptions so we
-			// assume that the connection is bad.
-			MovieCatalog.setConnectionOkay(false);
-			BrowserPnl.loadMovies(false);
-			return;
-		}
-
-		MovieCatalog.setConnectionOkay(true);
-
-		// the response:
-		String jsonString = "";
-		if (response != null)
-			jsonString = response.body();
-		else
-			// Should hopefully never happen.
-			return;
-		// System.out.println(jsonString);
-		System.out.println(uri.toString());
-
-		JsonObject rawPage = new Gson().fromJson(jsonString, JsonObject.class).getAsJsonObject("data")
-				.getAsJsonObject("movie");
-		System.out.println("Start parse");
-		parseRawPage(rawPage);
-		System.out.println("End parse");
-	}
+	
 
 	private void parseRawPage(JsonObject rawPage) {
 		backgroundImg = new Image(rawPage.get("background_image").getAsString(), true);
@@ -320,10 +261,11 @@ public class MovieInfoPnl extends GridPane {
 		}
 
 		screenshotLinks = new String[3];
-		
+
 		// Switching to a more reliable source for screenshots
 		for (int i = 0; i < 3; i++) {
-			screenshotLinks[i] = rawPage.get("medium_screenshot_image" + (i + 1)).getAsString().replace("yts.torrentbay.to", "img.yts.mx");
+			screenshotLinks[i] = rawPage.get("medium_screenshot_image" + (i + 1)).getAsString().replace("yts.mx",
+					"img.yts.mx");
 		}
 
 		ytTrailerCode = rawPage.get("yt_trailer_code").getAsString();
@@ -364,7 +306,7 @@ public class MovieInfoPnl extends GridPane {
 
 		backBtnBox.setOnMouseClicked(mouseEvent -> {
 			webview.getEngine().load(null);
-			Main.switchSceneContent(Main.getBrowserPnl());
+			App.switchSceneContent(App.getBrowserPnl());
 		});
 
 		backBtnBox.setOnMouseEntered(mouseEvent -> {
@@ -459,7 +401,7 @@ public class MovieInfoPnl extends GridPane {
 				new Background(new BackgroundFill(Color.rgb(106, 192, 69, 1f), new CornerRadii(3), null)));
 		streamBtn.setPrefSize(263, 40);
 		streamBtn.setTextFill(Color.WHITE);
-		streamBtn.setFont(ARIMO_BOLD18);
+		streamBtn.setFont(Fonts.ARIMO_BOLD18);
 		// GridPane.setMargin(streamBtn, new Insets(10, 0, 0, 40));
 		streamBtn.setOnMouseEntered(mouseEvent -> {
 			final Animation animation = new Transition() {
@@ -527,7 +469,7 @@ public class MovieInfoPnl extends GridPane {
 		Label movieTitle = new Label(movie.getTitle());
 		System.out.println(movie.getTitle());
 		movieTitle.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.75f)));
-		movieTitle.setFont(ARIMO_BOLD40);
+		movieTitle.setFont(Fonts.ARIMO_BOLD40);
 		movieTitle.setWrapText(true);
 		movieTitle.setTextFill(Color.WHITE);
 		movieTitle.setPadding(new Insets(0, 0, 20, 0));
@@ -537,7 +479,7 @@ public class MovieInfoPnl extends GridPane {
 		// Year and Genres label
 		Label yearAndGenres = new Label();
 		yearAndGenres.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.75f)));
-		yearAndGenres.setFont(ARIMO_BOLD20);
+		yearAndGenres.setFont(Fonts.ARIMO_BOLD20);
 		yearAndGenres.setWrapText(true);
 		yearAndGenres.setTextFill(Color.WHITE);
 		yearAndGenres.setPadding(new Insets(0, 0, 15, 0));
@@ -564,7 +506,7 @@ public class MovieInfoPnl extends GridPane {
 		downloadBtnsBox.setVgap(5);
 
 		Label availableIn = new Label("Available in: ");
-		availableIn.setFont(ARIMO_ITALIC18);
+		availableIn.setFont(Fonts.ARIMO_ITALIC18);
 		availableIn.setTextFill(Color.WHITE);
 		downloadBtnsBox.getChildren().add(availableIn);
 
@@ -585,7 +527,7 @@ public class MovieInfoPnl extends GridPane {
 			currBtn.setBorder(new Border(new BorderStroke(Color.rgb(255, 255, 255, 0.16f), BorderStrokeStyle.SOLID,
 					new CornerRadii(5), new BorderWidths(1))));
 			currBtn.setTextFill(Color.WHITE);
-			currBtn.setFont(ARIMO_REG13);
+			currBtn.setFont(Fonts.ARIMO_REG13);
 			currBtn.setGraphicTextGap(5);
 			buttonsAndLinks.put(currBtn, currTorrent.getUrl());
 
@@ -674,7 +616,7 @@ public class MovieInfoPnl extends GridPane {
 			ratingBox.getChildren().add(imdbIcon);
 
 			Label rating = new Label(Float.toString(movie.getRating()));
-			rating.setFont(ARIMO_BOLD20);
+			rating.setFont(Fonts.ARIMO_BOLD20);
 			rating.setTextFill(Color.WHITE);
 			ratingBox.getChildren().add(rating);
 
@@ -695,12 +637,12 @@ public class MovieInfoPnl extends GridPane {
 
 		Label plotSumTitle = new Label("Plot summary");
 		plotSumTitle.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.75f)));
-		plotSumTitle.setFont(ARIMO_BOLD20);
+		plotSumTitle.setFont(Fonts.ARIMO_BOLD20);
 		plotSumTitle.setTextFill(Color.WHITE);
 		summaryContainer.getChildren().add(plotSumTitle);
 
 		Label plotSummary = new Label(this.plotSummary);
-		plotSummary.setFont(ARIMO_REG16);
+		plotSummary.setFont(Fonts.ARIMO_REG16);
 		plotSummary.setTextFill(Color.rgb(145, 145, 145, 1f));
 		plotSummary.setWrapText(true);
 		plotSummary.setMaxHeight(160);
@@ -826,11 +768,10 @@ public class MovieInfoPnl extends GridPane {
 				|| screenshotsArr[2].getImage().getProgress() != 1.0) {
 			Thread.onSpinWait();
 		}
-		
+
 		// We don't need the big screenshots urgently so load them in the background.
 		for (int j = 0; j < screenshotLinks.length; j++) {
-			popupScreenshotsArr[j] = new ImageView(
-					new Image(screenshotLinks[j].replace("medium", "large"), true));
+			popupScreenshotsArr[j] = new ImageView(new Image(screenshotLinks[j].replace("medium", "large"), true));
 		}
 
 		GridPane.setHalignment(screenshots, HPos.CENTER);
@@ -844,7 +785,7 @@ public class MovieInfoPnl extends GridPane {
 
 		Label topCast = new Label("Top Cast");
 		topCast.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.75f)));
-		topCast.setFont(ARIMO_BOLD20);
+		topCast.setFont(Fonts.ARIMO_BOLD20);
 		topCast.setTextFill(Color.WHITE);
 
 		castBox.getChildren().add(topCast);
@@ -868,14 +809,14 @@ public class MovieInfoPnl extends GridPane {
 			thumbnail.setClip(clip);
 
 			Label actorNameLbl = new Label(actor[0]);
-			actorNameLbl.setFont(ARIMO_BOLD14);
+			actorNameLbl.setFont(Fonts.ARIMO_BOLD14);
 			actorNameLbl.setTextFill(Color.rgb(145, 145, 145));
 
 			Label characterNameLbl = null;
 			if (actor.length > 1) {
 				characterNameLbl = new Label("as " + actor[1]);
 				characterNameLbl.setPadding(new Insets(0, 0, 0, -5));
-				characterNameLbl.setFont(ARIMO_REG14);
+				characterNameLbl.setFont(Fonts.ARIMO_REG14);
 				characterNameLbl.setTextFill(Color.WHITE);
 			}
 

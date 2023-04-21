@@ -1,4 +1,4 @@
-package yify.model.moviecatalog;
+package yify.model.api.yts;
 
 import java.net.ConnectException;
 

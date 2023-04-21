@@ -3,9 +3,9 @@ package yify.model.movie;
 import javafx.scene.layout.GridPane;
 
 public class PageState {
-	GridPane movieGrid;
-	int pageLimit;
-	int movieCount;
+	private GridPane movieGrid;
+	private int pageLimit;
+	private int movieCount;
 	
 	public PageState(GridPane movieGrid, int pageLimit, int movieCount) {
 		this.movieGrid = movieGrid;

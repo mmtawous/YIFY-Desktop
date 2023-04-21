@@ -256,6 +256,7 @@ public class DownloadDialog {
 		root.getChildren().add(downloadCancelContent);
 
 		Scene scene = new Scene(root, 550, 500);
+		scene.setFill(Color.TRANSPARENT);
 		scene.getStylesheets().add("File:CSS/style.css");
 
 		stage.setScene(scene);
@@ -267,7 +268,7 @@ public class DownloadDialog {
 
 	}
 
-	public static boolean isOpen() {
+	public static boolean Open() {
 		return isOpen;
 	}
 

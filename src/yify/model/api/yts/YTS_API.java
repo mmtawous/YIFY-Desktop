@@ -1,4 +1,4 @@
-package yify.model.moviecatalog;
+package yify.model.api.yts;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,9 +16,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import javafx.scene.image.Image;
+import yify.model.api.yts.searchquery.SearchQuery;
 import yify.model.movie.Movie;
 import yify.model.movie.PageState;
-import yify.model.moviecatalog.searchquery.SearchQuery;
+import yify.view.ui.App;
 import yify.view.ui.BrowserPnl;
 
 /**
@@ -32,56 +33,55 @@ import yify.view.ui.BrowserPnl;
  * @author Mohamed Tawous
  *
  */
-public class MovieCatalog {
-	/**
-	 * A thread that checks the connection between the client and the server at a
-	 * fixed interval of time.
-	 */
-	public ConnectionThread connectionThread;
-
-	/* A boolean denoting the current status of the client-server connection */
-	private static boolean connectionOkay = true;
-
+public class YTS_API {
 	/** The singleton instance for the MovieCatalog class. */
-	private static MovieCatalog instance;
+	private static YTS_API instance;
 
 	/**
 	 * The ArrayList holding the current page of parsed Movie objects in the
 	 * catalog.
 	 */
-	private ArrayList<Movie> currentPage;
+	private static ArrayList<Movie> currentPage;
 
 	/**
 	 * Stores instances of GridPane representing pages that have been previously
 	 * loaded. The key is the ID of the page and the value is the page.
 	 */
-	private LinkedHashMap<Integer, PageState> loaded;
+	private static LinkedHashMap<Integer, PageState> loaded;
 
 	/** The unparsed response from the YTS.mx server. */
-	private JsonObject rawPage;
+	private static JsonObject rawPage;
 	/**
 	 * A search query made by the user containing various parameters and their
 	 * values to be sent to the YTS.mx servers. /** An HttpClient to be used to make
 	 * HTTP requests.
 	 */
-	private SearchQuery searchQuery;
+	private static SearchQuery searchQuery;
 	/** An HTTPClient used to make HTTP requests to the YTS.mx servers. */
-	protected static HttpClient client = HttpClient.newHttpClient();
-	/** The known URL of the YTS.mx list of movies provided by the API */
-	public static final String LIST_MOVIES = "https://yts.torrentbay.to/api/v2/list_movies.json/";
+	protected static HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build();
+	
 
 	/** The parts of the known YTS.mx URL split up */
 	public static final String SCHEME = "https";
-	public static final String HOST = "yts.torrentbay.to";
-	public static final String PATH = "/api/v2/list_movies.json/";
+	public static final String HOST = "yts.mx";
+	public static final String LIST_MOVIES = "/api/v2/list_movies.json/";
+	
+	public static final String MOVIE_DETAILS = "/api/v2/movie_details.json/";
+	/** A constant for the id parameter as per the YTS.mx API */
+	public static final String ID_PARAM = "movie_id=";
+	/** A constant for the with_cast parameter as per the YTS.mx API */
+	public static final String WITH_CAST_PARAM = "with_cast=";
+	/** A constant for the with_images parameter as per the YTS.mx API */
+	public static final String WITH_IMAGES_PARAM = "with_images=";
+
 
 	/**
 	 * Can be used to obtain the static instance of the MovieCatalog class.
 	 * 
 	 */
-	public static MovieCatalog instance() {
+	public static YTS_API instance() {
 		if (instance == null) {
-			instance = new MovieCatalog();
+			instance = new YTS_API();
 		}
 
 		return instance;
@@ -91,8 +91,8 @@ public class MovieCatalog {
 	 * Constructs a new MovieCatalog object and sets the current page of the catalog
 	 * to page 1.
 	 */
-	private MovieCatalog() {
-		connectionThread = new ConnectionThread(10);
+	private YTS_API() {
+		new ConnectionThread(10); // Schedule connection checking for 10 second intervals
 		currentPage = new ArrayList<Movie>();
 
 		loaded = new LinkedHashMap<Integer, PageState>(10, 0.75f, true) {
@@ -115,19 +115,12 @@ public class MovieCatalog {
 		int rating = searchQuery.getRating();
 		String sortBy = searchQuery.getSortBy();
 		int pageNum = searchQuery.getPageNum();
-		
-		this.searchQuery = searchQuery;
-		
+
+		YTS_API.searchQuery = searchQuery;
+
 		makeRequest(searchTerm, quality, genre, Integer.toString(rating), sortBy, pageNum);
 	}
 
-	public static void setConnectionOkay(boolean connectionOkayPar) {
-		connectionOkay = connectionOkayPar;
-	}
-
-	public boolean getConnectionStatus() {
-		return connectionOkay;
-	}
 
 	public int getPageNumber() {
 		return searchQuery.getPageNum();
@@ -190,14 +183,14 @@ public class MovieCatalog {
 		// Check if have loaded this page before. If we have then just display it and
 		// finish early
 		PageState result = loaded.get(queryString.hashCode());
-		if (result != null) {
+		if (result != null && ConnectionThread.getConnectionStatus()) {
 			BrowserPnl.updateMovieGrid(result.getMovieGrid());
 			return;
 		}
 
 		URI uri = null;
 		try {
-			uri = new URI(SCHEME, HOST, PATH, queryString, null);
+			uri = new URI(SCHEME, HOST, LIST_MOVIES, queryString, null);
 		} catch (URISyntaxException e) {
 			// should hopefully never happen.
 			e.printStackTrace();
@@ -207,22 +200,22 @@ public class MovieCatalog {
 
 		try {
 			// Create a request
-			HttpRequest request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(10)).build();
-
+			HttpRequest request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(5)).build();
+			
 			// Use the client to send the request
 			response = client.send(request, BodyHandlers.ofString());
 		} catch (Exception e) {
 			// Any exceptions that occur here are most likely network exceptions so we
 			// assume that the connection is bad.
 			e.printStackTrace();
-			setConnectionOkay(false);
+			ConnectionThread.setConnectionOkay(false);
 
 			// This will just display the network error page
-			BrowserPnl.loadMovies(connectionOkay);
+			BrowserPnl.loadMovies(ConnectionThread.getConnectionStatus());
 			return;
 		}
 
-		setConnectionOkay(true);
+		ConnectionThread.setConnectionOkay(true);
 
 		// the response:
 		String jsonString = "";
@@ -244,7 +237,7 @@ public class MovieCatalog {
 		// happen. We need to discard the least recently accessed page if we are storing
 		// over a certain threshold of pages. (Done in constructor using LinkedHashMap
 		// API)
-		loaded.put(queryString.hashCode(), new PageState(BrowserPnl.loadMovies(connectionOkay),
+		loaded.put(queryString.hashCode(), new PageState(BrowserPnl.loadMovies(ConnectionThread.getConnectionStatus()),
 				rawPage.get("limit").getAsInt(), rawPage.get("movie_count").getAsInt()));
 
 	}
@@ -281,8 +274,6 @@ public class MovieCatalog {
 			currentPage.add(new Movie(id, thumbnail, title, year, rating, genres, lang));
 		}
 
-		System.out.println("Done!");
-
 	}
 
 	private String[] parseGenres(JsonArray genresJson) {
@@ -301,6 +292,54 @@ public class MovieCatalog {
 
 	private int getMovieCount() {
 		return loaded.get(searchQuery.getUrlString().hashCode()).getMovieCount();
+	}
+	
+	
+	
+	public JsonObject getMovieDetails(Movie movie) throws IOException, InterruptedException {
+		HttpClient client = YTS_API.getClient();
+
+		String queryString = ID_PARAM + movie.getId() + "&" + WITH_IMAGES_PARAM + true + "&" + WITH_CAST_PARAM + true;
+
+		URI uri = null;
+		try {
+			uri = new URI(SCHEME, HOST, MOVIE_DETAILS, queryString, null);
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+
+		HttpResponse<String> response = null;
+
+		try {
+			// Create a request
+			HttpRequest request = HttpRequest.newBuilder(uri).timeout(java.time.Duration.ofSeconds(5)).build();
+
+			// Use the client to send the request
+			response = client.send(request, BodyHandlers.ofString());
+		} catch (Exception e) {
+			// Any exceptions that occur here are most likely network exceptions so we
+			// assume that the connection is bad.
+			ConnectionThread.setConnectionOkay(false);
+			BrowserPnl.loadMovies(false);
+			App.hideBufferBar();
+			return null;
+		}
+
+		ConnectionThread.setConnectionOkay(true);
+
+		// the response:
+		String jsonString = "";
+		if (response != null)
+			jsonString = response.body();
+		else
+			// Should hopefully never happen.
+			return null;
+		// System.out.println(jsonString);
+		System.out.println(uri.toString());
+
+		JsonObject rawPage = new Gson().fromJson(jsonString, JsonObject.class).getAsJsonObject("data")
+				.getAsJsonObject("movie");
+		return rawPage;
 	}
 
 }

@@ -38,7 +38,7 @@ public class TorrentClient {
 
 	private static final String RESOURCES_PATH = Path.of(System.getProperty("user.dir"), "resources").toString();
 	private static final String NODE_PATH = Path.of(RESOURCES_PATH,
-			(currentOS == OS.WIN ? "node-v18.12.1-win-x64" : "TODO"), currentOS == OS.WIN ? "node.exe" : "bin\\node")
+			(currentOS == OS.WIN ? "node-v18.12.1-win-x64" : "node-v18.14.2-darwin-arm64"), currentOS == OS.WIN ? "node.exe" : "bin/node")
 			.toString();
 	private static final String WEBTORRENT_PATH = Path.of(RESOURCES_PATH, "webtorrent-cli", "bin", "cmd.js").toString();
 

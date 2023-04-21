@@ -19,7 +19,7 @@ import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import yify.model.moviecatalog.MovieCatalog;
+import yify.model.api.yts.YTS_API;
 import yify.model.torrentclient.SizeConvertCellFactory;
 import yify.model.torrentclient.TorrentClient;
 
@@ -83,7 +83,7 @@ public class TaskViewer {
 	private static class DownloadTask extends Task<Void> {
 		private volatile String infoServerUrl;
 		private final Process process;
-		private HttpClient client = MovieCatalog.getClient();
+		private HttpClient client = YTS_API.getClient();
 		private String downloadSpeed;
 		private long downloadSize;
 		private long downloaded;

@@ -1,4 +1,4 @@
-package yify.model.moviecatalog.searchquery;
+package yify.model.api.yts.searchquery;
 
 import java.util.Arrays;
 import java.util.List;

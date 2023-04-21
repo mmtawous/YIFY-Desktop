@@ -1,4 +1,4 @@
-package yify.model.moviecatalog.searchquery;
+package yify.model.api.yts.searchquery;
 
 public class SearchQuery {
 	private Quality quality;
@@ -7,7 +7,7 @@ public class SearchQuery {
 	private Genre genre;
 	private SortBy sortBy;
 	private int pageNum;
-
+	
 	/** A constant for the page parameter as per the YTS.mx API */
 	public static final String PAGE_PARAM = "page=";
 	/** A constant for the search parameter as per the YTS.mx API */
