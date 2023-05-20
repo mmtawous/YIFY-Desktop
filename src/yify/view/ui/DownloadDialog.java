@@ -32,6 +32,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Callback;
@@ -58,7 +59,9 @@ public class DownloadDialog {
 			stage.setTitle(STREAM_TITLE);
 		else
 			stage.setTitle(DOWNLOAD_TITLE);
-
+		
+		stage.initOwner(App.getStage());
+		stage.initModality(Modality.WINDOW_MODAL);
 		stage.initStyle(StageStyle.UTILITY);
 		isOpen = true;
 

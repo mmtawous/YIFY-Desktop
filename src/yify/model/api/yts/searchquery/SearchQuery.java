@@ -7,19 +7,20 @@ public class SearchQuery {
 	private Genre genre;
 	private SortBy sortBy;
 	private int pageNum;
-	
+
 	/** A constant for the page parameter as per the YTS.mx API */
-	public static final String PAGE_PARAM = "page=";
+	private static final String PAGE_PARAM = "page=";
 	/** A constant for the search parameter as per the YTS.mx API */
-	public static final String SEARCH_PARAM = "query_term=";
+	private static final String SEARCH_PARAM = "query_term=";
 	/** A constant for the quality parameter as per the YTS.mx API */
-	public static final String QUALITY_PARAM = "quality=";
+	private static final String QUALITY_PARAM = "quality=";
 	/** A constant for the genre parameter as per the YTS.mx API */
-	public static final String GENRE_PARAM = "genre=";
+	private static final String GENRE_PARAM = "genre=";
 	/** A constant for the rating parameter as per the YTS.mx API */
-	public static final String RATING_PARAM = "minimum_rating=";
+	private static final String RATING_PARAM = "minimum_rating=";
 	/** A constant for the sort by parameter as per the YTS.mx API */
-	public static final String SORT_PARAM = "sort_by=";
+	private static final String SORT_PARAM = "sort_by=";
+
 
 	private SearchQuery(String searchTerm, Quality quality, Genre genre, int rating, SortBy sortBy, int pageNum) {
 		setQuality(quality);
@@ -29,24 +30,23 @@ public class SearchQuery {
 		setSortBy(sortBy);
 		setPageNumConst(pageNum);
 	}
-	
+
 	public String getUrlString() {
 		return SEARCH_PARAM + searchTerm + "&" + QUALITY_PARAM + getQuality() + "&" + GENRE_PARAM + getGenre() + "&"
-				+ RATING_PARAM + rating + "&" + SORT_PARAM + getSortBy() + "&" + PAGE_PARAM
-				+ pageNum;
+				+ RATING_PARAM + rating + "&" + SORT_PARAM + getSortBy() + "&" + PAGE_PARAM + pageNum;
 	}
 
 	public int getPageNum() {
 		return pageNum;
 	}
-	
+
 	private void setPageNumConst(int pageNum) {
 		if (pageNum > 0) {
 			this.pageNum = pageNum;
 		} else {
 			throw new IllegalArgumentException();
 		}
-		
+
 	}
 
 	public SearchQuery setPageNum(int pageNum) {
@@ -55,19 +55,19 @@ public class SearchQuery {
 		} else {
 			throw new IllegalArgumentException();
 		}
-		
+
 		return new SearchQuery(searchTerm, quality, genre, rating, sortBy, pageNum);
 	}
 
 	public SearchQuery nextPage() {
 		this.pageNum++;
-		
+
 		return new SearchQuery(searchTerm, quality, genre, rating, sortBy, pageNum);
 	}
 
 	public SearchQuery previousPage() {
 		this.pageNum--;
-		
+
 		return new SearchQuery(searchTerm, quality, genre, rating, sortBy, pageNum);
 	}
 
@@ -138,7 +138,7 @@ public class SearchQuery {
 	}
 
 	public static SearchQuery getDefaultSearchQuery() {
-		return new SearchQuery("0", Quality.All, Genre.All, 0, SortBy.Date_Added, 1);
+		return new SearchQuery("0", Quality.All, Genre.All, 0, SortBy.Download_Count, 1);
 
 	}
 

@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public enum SortBy {
-	Date_Added, Rating, Title, Year, Peers, Seeds, Download_Count, Like_Count;
+	Download_Count, Date_Added, Rating, Title, Year, Peers, Seeds, Like_Count;
 
 	@Override
 	public String toString() {

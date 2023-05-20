@@ -21,7 +21,6 @@ import javafx.geometry.VPos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Light;
@@ -75,7 +74,6 @@ public class MovieInfoPnl extends GridPane {
 	 */
 	private Map<String, String> cast;
 	private Map<Button, String> buttonsAndLinks;
-	private HBox titlePnl;
 	private GridPane topContent;
 	private GridPane bottomContent;
 	private WebView webview;
@@ -112,8 +110,6 @@ public class MovieInfoPnl extends GridPane {
 		column.setPercentWidth(100);
 		this.getColumnConstraints().add(column);
 
-		/********************* Initialize titlePnl ********************/
-		initTitlePnl();
 		/********************** Add background and overlay ******************/
 		// Creating a GridPane to act as the overlay AND a container for the elements on
 		// top of the background.
@@ -134,13 +130,13 @@ public class MovieInfoPnl extends GridPane {
 		// two seconds then we break out of the loop.
 		long start = System.currentTimeMillis();
 		while (backgroundImg.getProgress() != 1.0) {
-			if (System.currentTimeMillis() - start > 2000) {
+			if (System.currentTimeMillis() - start > 2000 || backgroundImg.isError()) {	
 				System.out.println("Background loading time out.");
 				break;
 			}
 		}
 		ImageView backgroundView = new ImageView(backgroundImg);
-		backgroundView.fitWidthProperty().bind(titlePnl.widthProperty());
+		backgroundView.fitWidthProperty().bind(this.widthProperty());
 		backgroundView.setFitHeight(580);
 
 		// Image goes down before overlay
@@ -167,76 +163,6 @@ public class MovieInfoPnl extends GridPane {
 		this.add(bottomContent, 0, 2);
 
 	}
-
-	private void initTitlePnl() {
-		titlePnl = new HBox(950);
-		titlePnl.setAlignment(Pos.CENTER_LEFT);
-		titlePnl.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
-		titlePnl.setPadding(new Insets(10, 65, 10, 65));
-
-		Image ytsLogo = new Image("File:assets/logo-YTS.png");
-		ImageView imageView = new ImageView(ytsLogo);
-		imageView.setFitWidth(127);
-		imageView.setFitHeight(40);
-
-		titlePnl.getChildren().add(imageView);
-
-		ImageView taskViewerIcon = new ImageView(new Image("File:assets/taskManIcon.png"));
-
-		Button taskViewerBtn = new Button("", taskViewerIcon);
-		// hard coded insets for image size of icon
-		taskViewerBtn.setBackground(
-				new Background(new BackgroundFill(Color.TRANSPARENT, CornerRadii.EMPTY, new Insets(9, 14, 9, 14))));
-		taskViewerBtn.setFocusTraversable(false);
-		taskViewerBtn.setTooltip(new Tooltip("View running tasks"));
-
-		taskViewerBtn.setOnMouseEntered(moueseEvent -> {
-			final Animation animation = new Transition() {
-
-				{
-					setCycleDuration(Duration.millis(180));
-					setInterpolator(Interpolator.EASE_IN);
-				}
-
-				@Override
-				protected void interpolate(double frac) {
-					taskViewerBtn.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * frac)));
-				}
-			};
-			animation.play();
-
-		});
-
-		taskViewerBtn.setOnMouseExited(moueseEvent -> {
-			final Animation animation = new Transition() {
-
-				{
-					setCycleDuration(Duration.millis(180));
-					setInterpolator(Interpolator.EASE_IN);
-				}
-
-				@Override
-				protected void interpolate(double frac) {
-					taskViewerBtn.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * (1 - frac))));
-				}
-
-			};
-			animation.play();
-
-		});
-
-		taskViewerBtn.setOnMouseClicked(mouseEvent -> {
-			TaskViewer.show();
-		});
-
-		titlePnl.getChildren().add(taskViewerBtn);
-
-		titlePnl.setBorder(new Border(new BorderStroke(null, null, Color.rgb(47, 47, 47, 1f), null, null, null,
-				BorderStrokeStyle.SOLID, null, CornerRadii.EMPTY, new BorderWidths(1), Insets.EMPTY)));
-		this.add(titlePnl, 0, 0);
-
-	}
-
 	
 
 	private void parseRawPage(JsonObject rawPage) {
@@ -377,7 +303,14 @@ public class MovieInfoPnl extends GridPane {
 	}
 
 	private void initCoverImg(Movie movie) {
-		ImageView coverImg = new ImageView(movie.getThumbnail());
+		ImageView coverImg = null;
+	
+		if (movie.getThumbnail() == null) {
+			coverImg = new ImageView(movie.getThumbnailUrl());
+		} else {
+			coverImg = new ImageView(movie.getThumbnail());
+		}
+		
 		coverImg.setFitWidth(263);
 		coverImg.setFitHeight(390);
 

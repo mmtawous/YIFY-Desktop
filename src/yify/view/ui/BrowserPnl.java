@@ -2,6 +2,7 @@ package yify.view.ui;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.Transition;
@@ -10,12 +11,10 @@ import javafx.collections.FXCollections;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Tooltip;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -50,88 +49,37 @@ import yify.view.ui.util.Fonts;
 
 public class BrowserPnl extends VBox {
 	private static YTS_API instance;
-	private HBox titlePnl;
-	private GridPane searchPnl;
+	private static VBox searchPnl;
 	private static VBox moviePnl;
-	private Button searchBtn;
-	private TextField searchTermTxt;
-	private ComboBox<String> qualityCombo;
-	private ComboBox<String> genreCombo;
-	private ComboBox<String> ratingCombo;
-	private ComboBox<String> sortByCombo;
-	private Label moviePnlTitle;
+	private static Button searchBtn;
+	private static TextField searchTermTxt;
+	private static ComboBox<String> qualityCombo;
+	private static ComboBox<String> genreCombo;
+	private static ComboBox<String> ratingCombo;
+	private static ComboBox<String> sortByCombo;
 	private static HBox navBtnsBox;
 
 	public BrowserPnl() {
 
 		this.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
 
-		/********************* Initialize titlePnl START ********************/
-		titlePnl = new HBox(950);
-		titlePnl.setAlignment(Pos.CENTER_LEFT);
-		titlePnl.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
-		titlePnl.setPadding(new Insets(10, 65, 10, 65));
-
-		Image ytsLogo = new Image("File:assets/logo-YTS.png");
-		ImageView imageView = new ImageView(ytsLogo);
-		imageView.setFitWidth(127);
-		imageView.setFitHeight(40);
-		titlePnl.getChildren().add(imageView);
-
-		ImageView taskViewerIcon = new ImageView(new Image("File:assets/taskManIcon.png"));
-
-		Button taskViewerBtn = new Button("", taskViewerIcon);
-		// hard coded insets for image size of icon
-		taskViewerBtn.setBackground(
-				new Background(new BackgroundFill(Color.TRANSPARENT, CornerRadii.EMPTY, new Insets(9, 14, 9, 14))));
-		taskViewerBtn.setFocusTraversable(false);
-		taskViewerBtn.setTooltip(new Tooltip("View running tasks"));
-
-		taskViewerBtn.setOnMouseEntered(moueseEvent -> {
-			final Animation animation = getFadeTransition(taskViewerBtn, 180, Interpolator.EASE_IN, true);
-			animation.play();
-
-		});
-
-		taskViewerBtn.setOnMouseExited(moueseEvent -> {
-			final Animation animation = getFadeTransition(taskViewerBtn, 180, Interpolator.EASE_IN, false);
-			animation.play();
-
-		});
-
-		taskViewerBtn.setOnMouseClicked(mouseEvent -> {
-			TaskViewer.show();
-		});
-
-		titlePnl.getChildren().add(taskViewerBtn);
-
-		titlePnl.setBorder(new Border(new BorderStroke(null, null, Color.rgb(47, 47, 47, 1f), null, null, null,
-				BorderStrokeStyle.SOLID, null, CornerRadii.EMPTY, new BorderWidths(1), Insets.EMPTY)));
-		this.getChildren().add(titlePnl);
-		/********************** Initialize titlePnl END *********************/
-
 		/********************** Initialize searchPnl START ******************/
-		searchPnl = new GridPane();
+		searchPnl = new VBox();
 		searchPnl.setBackground(new Background(new BackgroundFill(Color.rgb(23, 23, 23, 1f), null, null)));
-		searchPnl.setMinSize(950, 266);
+		// searchPnl.setMinSize(950, 266);
 		searchPnl.setPadding(new Insets(50, 160, 0, 160));
 
-		initSearchBox();
-		initQualityCombo();
-		initGenreCombo();
-		initRatingCombo();
-		initSortByCombo();
-		initSearchBtn();
+		initSearchBar();
+		initOptions();
 
 		this.getChildren().add(searchPnl);
 		/*********************** Initialize searchPnl END *******************/
 
 		/*********************** Initialize moviePnl START ******************/
 		moviePnl = new VBox(10);
-		// moviePnl.setPrefWidth(1200);
 		moviePnl.setAlignment(Pos.TOP_CENTER);
 
-		moviePnlTitle = new Label("YIFY Movies");
+		Label moviePnlTitle = new Label("YIFY Movies");
 		moviePnlTitle.setFont(Fonts.ARIMO_REG22);
 		moviePnlTitle.setTextFill(Color.rgb(106, 192, 69, 1f));
 		moviePnlTitle.setPadding(new Insets(10, 0, 0, 0));
@@ -155,53 +103,54 @@ public class BrowserPnl extends VBox {
 
 	}
 
-	private Transition getFadeTransition(Node target, int cycleDuration, Interpolator interpolator, boolean fadeUp) {
-		return new Transition() {
-
-			{
-				setCycleDuration(Duration.millis(cycleDuration));
-				setInterpolator(interpolator);
-			}
-
-			@Override
-			protected void interpolate(double frac) {
-				if (fadeUp)
-					target.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * frac)));
-				else
-					target.setEffect(new DropShadow(5, 0, 0, Color.rgb(255, 255, 255, .40f * (1 - frac))));
-
-			}
-
-		};
-	}
-
-	private void initSearchBox() {
+	private void initSearchBar() {
+		HBox searchBox = new HBox(25);
 		Text searchTerm = new Text("Search Term: \n");
 		searchTerm.setFont(Fonts.ARIMO_BOLD22);
 		searchTerm.setFill(Color.rgb(90, 90, 90));
 		searchTerm.setLineSpacing(-10);
 
-		searchPnl.add(searchTerm, 0, 0);
+		searchPnl.getChildren().add(searchTerm);
 
-		searchTermTxt = new TextField();
-		searchTermTxt.setBackground(new Background(
-				new BackgroundFill(Color.rgb(40, 40, 40, 1f), new CornerRadii(3), new Insets(0, 25, 0, 0))));
+		SearchBar searchBar = new SearchBar(YTS_API.getMovieDb());
+		searchTermTxt = searchBar.getSearchBar();
+		searchTermTxt
+				.setBackground(new Background(new BackgroundFill(Color.rgb(40, 40, 40, 1f), new CornerRadii(3), null)));
 		searchTermTxt.setFont(Fonts.ARIAL_REG16);
 		searchTermTxt.setStyle("-fx-text-inner-color: #a2a2a2;");
-		searchTermTxt.setPrefSize(880, 40);
-		searchTermTxt.setMaxSize(880, 40);
+		searchTermTxt.setMinSize(880, 40);
+
 		searchTermTxt.setFocusTraversable(false);
 		searchTermTxt.setOnKeyPressed(keyEvent -> {
 			if (keyEvent.getCode().equals(KeyCode.ENTER)) {
 				submitSearch();
 			}
 		});
-		GridPane.setConstraints(searchTermTxt, 0, 1, 5, 1);
-		searchPnl.getChildren().add(searchTermTxt);
+
+		searchBox.getChildren().add(searchBar);
+
+		initSearchBtn();
+		searchBox.getChildren().add(searchBtn);
+
+		searchPnl.getChildren().add(searchBox);
 
 	}
 
-	private void initQualityCombo() {
+	private void initOptions() {
+
+		HBox optionsBox = new HBox();
+		optionsBox.setPadding(new Insets(0, 0, 50, 0));
+
+		optionsBox.getChildren().add(getQualityBox());
+		optionsBox.getChildren().add(getGenreBox());
+		optionsBox.getChildren().add(getRatingBox());
+		optionsBox.getChildren().add(getSortByBox());
+
+		searchPnl.getChildren().add(optionsBox);
+
+	}
+
+	private VBox getQualityBox() {
 		VBox qualityBox = new VBox(15);
 		qualityBox.setPadding(new Insets(20, 20, 0, 0));
 
@@ -211,16 +160,16 @@ public class BrowserPnl extends VBox {
 		qualityBox.getChildren().add(quality);
 
 		qualityCombo = new ComboBox<String>();
-		qualityCombo.setPrefSize(130, 40);
+		qualityCombo.setMinSize(130, 40);
 		qualityCombo.setItems(FXCollections.observableList(Quality.getOptions()));
 		qualityCombo.getSelectionModel().selectFirst();
 		qualityCombo.setFocusTraversable(false);
 		qualityBox.getChildren().add(qualityCombo);
 
-		searchPnl.add(qualityBox, 0, 2);
+		return qualityBox;
 	}
 
-	private void initGenreCombo() {
+	private VBox getGenreBox() {
 		VBox genreBox = new VBox(15);
 		genreBox.setPadding(new Insets(20, 20, 0, 0));
 
@@ -230,17 +179,17 @@ public class BrowserPnl extends VBox {
 		genreBox.getChildren().add(genre);
 
 		genreCombo = new ComboBox<String>();
-		genreCombo.setPrefSize(130, 40);
+		genreCombo.setMinSize(130, 40);
 		genreCombo.setItems(FXCollections.observableList(Genre.getOptions()));
 		genreCombo.getSelectionModel().selectFirst();
 		genreCombo.setFocusTraversable(false);
 		genreBox.getChildren().add(genreCombo);
 
-		searchPnl.add(genreBox, 1, 2);
+		return genreBox;
 
 	}
 
-	private void initRatingCombo() {
+	private VBox getRatingBox() {
 		VBox ratingBox = new VBox(15);
 		ratingBox.setPadding(new Insets(20, 20, 0, 0));
 
@@ -258,15 +207,15 @@ public class BrowserPnl extends VBox {
 
 		ratingCombo.setItems(FXCollections.observableList(ratingOptions));
 		ratingCombo.getSelectionModel().selectFirst();
-		ratingCombo.setPrefSize(130, 40);
+		ratingCombo.setMinSize(130, 40);
 		ratingCombo.setFocusTraversable(false);
 		ratingBox.getChildren().add(ratingCombo);
 
-		searchPnl.add(ratingBox, 2, 2);
+		return ratingBox;
 
 	}
 
-	private void initSortByCombo() {
+	private VBox getSortByBox() {
 		VBox sortByBox = new VBox(15);
 		sortByBox.setPadding(new Insets(20, 20, 0, 0));
 
@@ -276,13 +225,13 @@ public class BrowserPnl extends VBox {
 		sortByBox.getChildren().add(sortBy);
 
 		sortByCombo = new ComboBox<String>();
-		sortByCombo.setPrefSize(130, 40);
+		sortByCombo.setMinSize(130, 40);
 		sortByCombo.setItems(FXCollections.observableList(SortBy.getOptions()));
 		sortByCombo.getSelectionModel().selectFirst();
 		sortByCombo.setFocusTraversable(false);
 		sortByBox.getChildren().add(sortByCombo);
 
-		searchPnl.add(sortByBox, 3, 2);
+		return sortByBox;
 
 	}
 
@@ -340,6 +289,7 @@ public class BrowserPnl extends VBox {
 					Color vColor = Color.rgb(r, g, b);
 					searchBtn.setBackground(new Background(new BackgroundFill(vColor, new CornerRadii(3), null)));
 				}
+
 			};
 			animation.play();
 		});
@@ -348,10 +298,9 @@ public class BrowserPnl extends VBox {
 			submitSearch();
 		});
 
-		searchPnl.add(searchBtn, 5, 1);
 	}
 
-	private static void initNavBtns() {
+	static void initNavBtns() {
 
 		if (moviePnl.getChildren().size() >= 2) {
 			navBtnsBox = (HBox) moviePnl.getChildren().get(1);
@@ -627,9 +576,8 @@ public class BrowserPnl extends VBox {
 		}
 	}
 
-	private void submitSearch() {
+	static void submitSearch() {
 		String searchTerm = searchTermTxt.getText();
-		searchTermTxt.clear();
 		String quality = qualityCombo.getSelectionModel().getSelectedItem();
 		String genre = genreCombo.getSelectionModel().getSelectedItem();
 		String rating = ratingCombo.getSelectionModel().getSelectedItem();
@@ -649,14 +597,7 @@ public class BrowserPnl extends VBox {
 
 			initNavBtns();
 
-			// Switching scenes must be done on JavaFX thread.
-			Platform.runLater(new Runnable() {
-				@Override
-				public void run() {
-					// Hide the buffering bar here
-					App.hideBufferBar();
-				}
-			});
+			App.hideBufferBar();
 
 		});
 	}
@@ -664,15 +605,13 @@ public class BrowserPnl extends VBox {
 	public static GridPane loadMovies(boolean connectionOkay) {
 		System.out.println("Connection Okay: " + connectionOkay);
 
-		GridPane movieGrid;
-
 		if (moviePnl.getChildren().size() > 2) {
 			Platform.runLater(() -> {
 				moviePnl.getChildren().remove(2);
 			});
 		}
 
-		movieGrid = new GridPane();
+		GridPane movieGrid = new GridPane();
 
 		movieGrid.setHgap(55);
 		movieGrid.setVgap(60);
@@ -687,15 +626,7 @@ public class BrowserPnl extends VBox {
 		ArrayList<Movie> movies = instance.getCurrentPage();
 
 		if (movies.isEmpty()) {
-			Label noResults = new Label("Your search query yeilded no results");
-			noResults.setFont(Fonts.ARIMO_BOLD22);
-			noResults.setTextFill(Color.WHITE);
-			noResults.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.25f)));
-			movieGrid.setAlignment(Pos.CENTER);
-			movieGrid.add(noResults, 0, 0);
-			Platform.runLater(() -> {
-				moviePnl.getChildren().add(movieGrid);
-			});
+			displayNoResults();
 			return null;
 		}
 
@@ -828,6 +759,7 @@ public class BrowserPnl extends VBox {
 					animation.play();
 
 				});
+
 				HBox movieTitleContainer = new HBox(5);
 				movieTitleContainer.setMaxWidth(thumbnailView.getFitWidth());
 
@@ -871,12 +803,14 @@ public class BrowserPnl extends VBox {
 						});
 
 					} else
+
 						loadMovies(ConnectionThread.getConnectionStatus());
 				});
 
 				movieGrid.add(movieBox, j, (int) i);
 
 				cnt++;
+
 			}
 		}
 
@@ -884,6 +818,26 @@ public class BrowserPnl extends VBox {
 			moviePnl.getChildren().add(movieGrid);
 		});
 		return movieGrid;
+	}
+
+	private static void displayNoResults() {
+
+		GridPane movieGrid = new GridPane();
+
+		movieGrid.setHgap(55);
+		movieGrid.setVgap(60);
+		movieGrid.setAlignment(Pos.TOP_CENTER);
+		movieGrid.setPadding(new Insets(0, 0, 20, 0));
+
+		Label noResults = new Label("No Results Found");
+		noResults.setFont(Fonts.ARIMO_BOLD22);
+		noResults.setTextFill(Color.WHITE);
+		noResults.setEffect(new DropShadow(2, 0, 2, Color.rgb(0, 0, 0, 0.25f)));
+		movieGrid.setAlignment(Pos.CENTER);
+		movieGrid.add(noResults, 0, 0);
+		Platform.runLater(() -> {
+			moviePnl.getChildren().add(movieGrid);
+		});
 	}
 
 	private static void displayBadConnection(GridPane movieGrid) {
@@ -971,16 +925,24 @@ public class BrowserPnl extends VBox {
 		});
 
 		reloadBtn.setOnAction(buttonEvent -> {
+			BackgroundWorker.submit(() -> {
+				App.showBufferBar();
 
-			try {
-				instance.makeRequest(SearchQuery.getDefaultSearchQuery());
-			} catch (IOException | InterruptedException e) {
-				e.printStackTrace();
-			}
+				try {
+					instance.makeRequest(SearchQuery.getDefaultSearchQuery());
+				} catch (IOException |
 
-			if (ConnectionThread.getConnectionStatus()) {
-				initNavBtns();
-			}
+						InterruptedException e) {
+					e.printStackTrace();
+				}
+
+				if (ConnectionThread.getConnectionStatus()) {
+					initNavBtns();
+				}
+
+				App.hideBufferBar();
+
+			});
 
 		});
 
@@ -992,15 +954,20 @@ public class BrowserPnl extends VBox {
 	}
 
 	public static void updateMovieGrid(GridPane movieGrid) {
-		System.out.println("Updated grid");
 
 		if (moviePnl.getChildren().size() > 2)
 			Platform.runLater(() -> {
 				moviePnl.getChildren().remove(2);
 			});
 
-		Platform.runLater(() -> {
-			moviePnl.getChildren().add(movieGrid);
-		});
+		if (movieGrid != null) {
+			Platform.runLater(() -> {
+				moviePnl.getChildren().add(movieGrid);
+			});
+		} else {
+			displayNoResults();
+		}
+
+		initNavBtns();
 	}
 }

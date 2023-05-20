@@ -39,6 +39,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
@@ -91,6 +92,8 @@ final class ChoosePlayerDialog {
 			scene.getStylesheets().add("File:CSS/chooseDialog.css");
 
 			stage.setScene(scene);
+			stage.initOwner(App.getStage());
+			stage.initModality(Modality.WINDOW_MODAL);
 			stage.initStyle(StageStyle.TRANSPARENT);
 			stage.setAlwaysOnTop(true);
 			showStage();

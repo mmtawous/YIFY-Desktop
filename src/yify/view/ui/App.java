@@ -25,8 +25,10 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import yify.model.api.yts.ConnectionThread;
 import yify.model.api.yts.YTS_API;
@@ -37,6 +39,7 @@ public class App extends Application implements QuitHandler, AppReopenedListener
 	private static YTS_API instance;
 	private static ScrollPane mainContent;
 	private static StackPane root;
+	private static TitlePnl titlePnl;
 	private static BrowserPnl browserPnl;
 	private static BufferBarPnl bufferBarPnl;
 
@@ -45,14 +48,16 @@ public class App extends Application implements QuitHandler, AppReopenedListener
 		App.primaryStage = primaryStage;
 		Platform.setImplicitExit(false);
 
-		// Constructing the MovieCatalog early will ensure the connection is checked
-		// early on
-		instance = YTS_API.instance();
+		titlePnl = new TitlePnl();
 		browserPnl = new BrowserPnl();
+		instance = YTS_API.instance();
+		VBox mainContainer = new VBox(0, titlePnl, browserPnl);
+		mainContainer.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
+
 		bufferBarPnl = new BufferBarPnl();
 		bufferBarPnl.setVisible(false);
 
-		/*********************** Setting Scene for movieBrowser START *******/
+		/*********************** Setting Scene for BrowserPnl START *******/
 
 		root = new StackPane();
 		mainContent = new ScrollPane();
@@ -60,7 +65,7 @@ public class App extends Application implements QuitHandler, AppReopenedListener
 		mainContent.setBackground(new Background(new BackgroundFill(Color.rgb(29, 29, 29, 1f), null, null)));
 		mainContent.setFitToWidth(true);
 		mainContent.setFitToHeight(true);
-		mainContent.setContent(browserPnl);
+		mainContent.setContent(mainContainer);
 
 		root.getChildren().addAll(mainContent, bufferBarPnl);
 
@@ -212,14 +217,18 @@ public class App extends Application implements QuitHandler, AppReopenedListener
 		Platform.runLater(new Runnable() {
 			@Override
 			public void run() {
-				mainContent.setContent(node);
+				((VBox) mainContent.getContent()).getChildren().set(1, node == null ? browserPnl : node);
 			}
 		});
 	}
 
-	public static Node getBrowserPnl() {
+	public static BrowserPnl getBrowserPnl() {
 
 		return browserPnl;
+	}
+	
+	public static Window getStage() {
+		return primaryStage;
 	}
 
 	public static void main(String[] args) {

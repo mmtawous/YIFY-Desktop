@@ -11,6 +11,9 @@ module yify.desktop {
 	requires jdk.crypto.ec;
 	requires jdk.crypto.cryptoki;
 	requires com.google.gson;
+	requires java.naming;
+	requires org.apache.commons.text;
+	requires javafx.base;
 	
 	opens yify.view.ui to javafx.fxml;
 	opens yify.model.torrentclient to javafx.base;

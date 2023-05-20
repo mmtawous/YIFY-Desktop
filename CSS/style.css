@@ -1,3 +1,41 @@
+#suggestionsList .scroll-bar:vertical {
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+}
+
+#suggestionsList .scroll-bar:horizontal {
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+}
+
+
+#suggestionsList {
+    -fx-background-color: #2F2F2F;
+}
+
+#suggestionsList .list-cell:even{
+    -fx-background-color: #202020;
+    -fx-border-color: transparent #2F2F2F #2F2F2F transparent;
+    -fx-font-family: Arial;
+    -fx-font-size: 14.0px;
+    -fx-font-weight: bolder;
+    -fx-text-fill: #ffffff;
+}
+
+#suggestionsList .list-cell:odd{
+    -fx-background-color: #202020;
+    -fx-border-color: transparent #2F2F2F #2F2F2F transparent;
+    -fx-font-family: Arial;
+    -fx-font-size: 14.0px;
+    -fx-font-weight: bolder;
+    -fx-text-fill: #ffffff;
+    
+}
+
+#suggestionsList .list-cell:filled:hover{
+    -fx-background-color: #2F2F2F;
+}
+
 .combo-box .list-cell {
     -fx-text-fill: #a2a2a2;
 }
@@ -117,7 +155,7 @@
  }
 .table-view .column-header{
     -fx-background-color: #1c1e20;
-    -fx-border-color: transparent transparent #353535 transparent;
+    -fx-border-color: transparent transparent #2F2F2F transparent;
     -fx-padding: 10.0 0.0 2.0 2.0
  }
 .table-view .column-header .label{
